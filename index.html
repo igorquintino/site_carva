@@ -56,11 +56,17 @@
       .grid { grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 640px) {
-      header { gap:12px; padding:10px 0 16px; }
-      header .brand { flex:1 1 100%; }
-      header .cta { width:100%; text-align:center; padding:14px 16px; border-radius:14px; }
-      .badge { font-size:11px; padding:3px 8px; }
-    }
+  header { gap:12px; padding:10px 0 16px; justify-content:center; }  /* garante centro */
+  header .brand {
+    flex:1 1 100%;
+    display:flex;
+    justify-content:center;   /* 💡 mantém a logo no meio */
+    align-items:center;
+  }
+  header .cta { width:100%; text-align:center; padding:14px 16px; border-radius:14px; }
+  .badge { font-size:11px; padding:3px 8px; }
+}
+
   </style>
 </head>
 <body>
