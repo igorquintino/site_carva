@@ -4,8 +4,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CARVA — 3D Logo (.gltf com assets externos)</title>
   <style>
-    :root{ --bg:#0b0b0b; --fg:#eaeaea; }
-    html,body{height:100%}
+    :root{ --bg:#ffffff; --fg:#111111; }
+    html,body{ margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     body{ margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }.logo3d-wrap{ position:relative; width:100%; height:60vh; min-height:360px; max-height:78vh; display:grid; place-items:center; overflow:hidden; }
 canvas{ display:block; width:100%; height:100%; }
 
@@ -13,6 +13,13 @@ canvas{ display:block; width:100%; height:100%; }
 /* .perm removido — giroscópio desativado no mobile */
 .msg{ position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:12px; background:#141414; border:1px solid #2a2a2a; padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%; text-align:center }
 @media (max-width:640px){ .logo3d-wrap{ height:56vh; min-height:300px } }
+
+/* ===== Bloco de texto + CTA abaixo do canvas ===== */
+.cta-section{ display:grid; place-items:center; text-align:center; gap:14px; padding: 22px 16px 32px; }
+.cta-text{ max-width: 62ch; font-size: clamp(14px, 2.2vw, 18px); line-height: 1.5; margin: 0 auto; }
+.cta-btn{ -webkit-tap-highlight-color: transparent; cursor: pointer; font-weight: 800; letter-spacing: .02em; text-transform: lowercase; padding: .9em 1.2em; border-radius: 14px; border: 1px solid #e5e5e5; background: #111; color: #fff; box-shadow: 0 10px 20px rgba(0,0,0,.08); }
+.cta-btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 24px rgba(0,0,0,.12); }
+.cta-btn:active{ transform: translateY(0); }
 
   </style>  <!-- Import Map: resolve "three" e addons no navegador -->  <script type="importmap">
     {"imports":{
@@ -23,7 +30,10 @@ canvas{ display:block; width:100%; height:100%; }
 <body>
   <div class="logo3d-wrap" id="logo3d">
     <div class="msg" id="msg" style="display:none"></div><div class="hint">arraste com o mouse ou com o dedo para girar</div>
-  </div>  <script type="module">
+  </div>  <section class="cta-section">
+    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
+    <button class="cta-btn" id="ctaJoin">entrar na Lista</button>
+  </section>  <script type="module">
     /* ===================== CONFIG (.GLTF) =====================
        Use um .gltf com arquivos externos (.bin, /textures, etc.).
        Coloque resourcePath apontando para a pasta onde estão esses assets.
@@ -42,7 +52,7 @@ canvas{ display:block; width:100%; height:100%; }
       // Se preferir separar basePath + filename: defina basePath e passe só o nome do arquivo em modelUrl
       basePath: null, // ex.: './models/'
       crossOrigin: 'anonymous',
-      initialScale: 1.2,
+      initialScale: 0.9,
       rotateOnIdle: true,
     };
 
@@ -150,5 +160,8 @@ canvas{ display:block; width:100%; height:100%; }
       renderer.render(scene, camera); requestAnimationFrame(tick);
     }
     tick();
+      const CTA_URL = 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA';
+    const ctaEl = document.getElementById('ctaJoin');
+    if (ctaEl) { ctaEl.addEventListener('click', ()=> window.open(CTA_URL, '_blank')); }
   </script></body>
 </html>
