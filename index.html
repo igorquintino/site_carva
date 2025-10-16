@@ -1,167 +1,123 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CARVA — 3D Logo (.gltf com assets externos)</title>
+  <title>CARVA — Lista de Espera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --bg:#ffffff; --fg:#111111; }
-    html,body{ margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body{ margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }.logo3d-wrap{ position:relative; width:100%; height:60vh; min-height:360px; max-height:78vh; display:grid; place-items:center; overflow:hidden; }
-canvas{ display:block; width:100%; height:100%; }
+    :root{
+      --bg:#fff;
+      --fg:#111;
+    }
+    *{box-sizing:border-box; margin:0; padding:0}
+    html,body{height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); background:var(--bg); overflow-x:hidden;}
 
-.hint{ position:absolute; bottom:10px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.75;}
-/* .perm removido — giroscópio desativado no mobile */
-.msg{ position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:12px; background:#141414; border:1px solid #2a2a2a; padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%; text-align:center }
-@media (max-width:640px){ .logo3d-wrap{ height:56vh; min-height:300px } }
-
-/* ===== Bloco de texto + CTA abaixo do canvas ===== */
-.cta-section{ display:grid; place-items:center; text-align:center; gap:14px; padding: 22px 16px 32px; }
-.cta-text{ max-width: 62ch; font-size: clamp(14px, 2.2vw, 18px); line-height: 1.5; margin: 0 auto; }
-.cta-btn{ -webkit-tap-highlight-color: transparent; cursor: pointer; font-weight: 800; letter-spacing: .02em; text-transform: lowercase; padding: .9em 1.2em; border-radius: 14px; border: 1px solid #e5e5e5; background: #111; color: #fff; box-shadow: 0 10px 20px rgba(0,0,0,.08); }
-.cta-btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 24px rgba(0,0,0,.12); }
-.cta-btn:active{ transform: translateY(0); }
-
-  </style>  <!-- Import Map: resolve "three" e addons no navegador -->  <script type="importmap">
-    {"imports":{
-      "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
-    }}
-  </script></head>
-<body>
-  <div class="logo3d-wrap" id="logo3d">
-    <div class="msg" id="msg" style="display:none"></div><div class="hint">arraste com o mouse ou com o dedo para girar</div>
-  </div>  <section class="cta-section">
-    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
-    <button class="cta-btn" id="ctaJoin">entrar na Lista</button>
-  </section>  <script type="module">
-    /* ===================== CONFIG (.GLTF) =====================
-       Use um .gltf com arquivos externos (.bin, /textures, etc.).
-       Coloque resourcePath apontando para a pasta onde estão esses assets.
-       Exemplos de estrutura:
-       ./models/logo3d.gltf
-       ./models/logo3d.bin
-       ./models/textures/diffuse.png
-
-       Se o modelo estiver comprimido em DRACO, o loader abaixo já suporta.
-    ============================================================ */
-    const CONFIG = {
-      // Caminho do arquivo .gltf (pode incluir subpasta)
-      modelUrl: './logo3d.gltf',
-      // Pasta onde estão .bin e /textures (terminar com '/')
-      resourcePath: './',
-      // Se preferir separar basePath + filename: defina basePath e passe só o nome do arquivo em modelUrl
-      basePath: null, // ex.: './models/'
-      crossOrigin: 'anonymous',
-      initialScale: 0.9,
-      rotateOnIdle: true,
-    };
-
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-
-    const wrap = document.getElementById('logo3d');
-    const msg  = document.getElementById('msg');
-    function showMsg(text){ msg.innerHTML = text; msg.style.display = 'block'; }
-
-    // Aviso se estiver rodando em file:// (recomendado usar servidor local)
-    if (location.protocol === 'file:') {
-      showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server) para evitar bloqueios ao carregar .gltf e texturas.');
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:url('./backgroundpc.png') center/cover no-repeat;
+      z-index:-1;
     }
 
-    const scene = new THREE.Scene();
-    scene.background = null;
+    @media (max-width:768px){
+      body::before{
+        background:url('./backgroundmoblie.png') center/cover no-repeat;
+      }
+    }
 
+    .wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center;}
+
+    .logo3d{ width:100%; height:40vh; display:flex; align-items:center; justify-content:center; }
+
+    .cta-text{ font-size:clamp(14px,2.2vw,18px); line-height:1.5; max-width:62ch; margin:20px auto; }
+
+    .cta-btn{ cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px; background:#111; color:#fff; font-weight:800; letter-spacing:.02em; text-transform:lowercase; box-shadow:0 10px 20px rgba(0,0,0,.08); transition:transform .2s, box-shadow .2s; }
+    .cta-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.15); }
+    .cta-btn:active{ transform:translateY(0); }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo3d" id="logo3d"></div>
+    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
+    <button class="cta-btn" id="ctaJoin">entrar na Lista</button>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+
+    const CONFIG = {
+      modelUrl: './logo3d.gltf',
+      initialScale: 0.9,
+      rotateOnIdle: true,
+      ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
+    };
+
+    const wrap = document.getElementById('logo3d');
+    const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     wrap.appendChild(renderer.domElement);
 
-    const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4);
-    const fill = new THREE.DirectionalLight(0x99ffe1, 1.2); fill.position.set(-3, 2, 1);
-    const rim = new THREE.DirectionalLight(0x66aaff, 1.1); rim.position.set(0, -2, -3);
-    const amb = new THREE.AmbientLight(0xffffff, 0.35);
-    scene.add(key, fill, rim, amb);
+    const light1 = new THREE.DirectionalLight(0xffffff,2.2); light1.position.set(2,3,4);
+    const light2 = new THREE.AmbientLight(0xffffff,.35);
+    scene.add(light1, light2);
 
     const group = new THREE.Group();
     scene.add(group);
 
-    // ===== Loader GLTF com DRACO + resourcePath/basePath =====
     const loader = new GLTFLoader();
-    const draco = new DRACOLoader();
-    draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-    loader.setDRACOLoader(draco);
+    loader.load(CONFIG.modelUrl, gltf=>{
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3()).length();
+      const scale = (CONFIG.initialScale*1.6)/(size||1);
+      model.scale.setScalar(scale);
+      group.add(model);
+    }, undefined, err=>{
+      console.error('Erro ao carregar modelo:', err);
+    });
 
-    if (CONFIG.basePath) loader.setPath(CONFIG.basePath);
-    if (CONFIG.resourcePath) loader.setResourcePath(CONFIG.resourcePath);
-    if (CONFIG.crossOrigin) loader.crossOrigin = CONFIG.crossOrigin;
-
-    function loadModel(){
-      loader.load(
-        CONFIG.modelUrl,
-        (gltf)=>{
-          const model = gltf.scene;
-          const box = new THREE.Box3().setFromObject(model);
-          const size = box.getSize(new THREE.Vector3()).length();
-          const scale = (CONFIG.initialScale * 1.6) / (size || 1);
-          model.scale.setScalar(scale);
-          model.traverse((o)=>{ if(o.isMesh){ o.castShadow = o.receiveShadow = true; if(o.material) o.material.envMapIntensity = 1.0; }});
-          model.rotation.set(0, Math.PI*0.1, 0);
-          group.add(model);
-          showMsg(''); // esconde mensagens
-        },
-        (xhr)=>{
-          // Progresso opcional: xhr.loaded / xhr.total (pode ser 0 quando não informado)
-        },
-        (err)=>{
-          console.error('Erro ao carregar GLTF:', err);
-          showMsg('Não consegui carregar seu <b>.gltf</b>. Verifique:<br>• <b>resourcePath</b> aponta para a pasta com <b>.bin</b> e <b>textures/</b><br>• Rode via servidor local (http://).<br>Carregando um cubo de teste...');
-          const geo = new THREE.BoxGeometry(1,1,1);
-          const mat = new THREE.MeshStandardMaterial({ color: 0x18e091, metalness:.4, roughness:.35 });
-          const cube = new THREE.Mesh(geo, mat);
-          group.add(cube);
-        }
-      );
-    }
-    loadModel();
-
-    // ===== Responsivo =====
     function resize(){
       const w = wrap.clientWidth, h = wrap.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h; camera.updateProjectionMatrix();
+      renderer.setSize(w,h,false);
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
     }
     resize();
     addEventListener('resize', resize);
 
-    // ==== Interação arrastar/inércia ====
-    let isDown = false, lastX = 0, lastY = 0, vx = 0, vy = 0;
-    const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
-    const onMove = (x,y)=>{
-      if(!isDown) return; const dx = x - lastX, dy = y - lastY; lastX = x; lastY = y;
-      const k = 0.005; vy = -dx * k; vx = -dy * k; group.rotation.y += vy; group.rotation.x += vx; group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
-    };
-    const onUp = ()=>{ isDown = false; };
-    renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX, e.clientY));
-    addEventListener('mousemove', e=> onMove(e.clientX, e.clientY));
-    addEventListener('mouseup', onUp);
+    let isDown=false, lastX=0,lastY=0,vx=0,vy=0;
+    const onDown=(x,y)=>{isDown=true;lastX=x;lastY=y;};
+    const onMove=(x,y)=>{if(!isDown)return;const dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;const k=0.005;vy=-dx*k;vx=-dy*k;group.rotation.y+=vy;group.rotation.x+=vx;group.rotation.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,group.rotation.x));};
+    const onUp=()=>{isDown=false;};
 
-    renderer.domElement.addEventListener('touchstart', e=>{ const t=e.touches[0]; if(t) onDown(t.clientX, t.clientY); }, {passive:true});
-    renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX, t.clientY); }, {passive:true});
-    renderer.domElement.addEventListener('touchend', onUp);
+    renderer.domElement.addEventListener('mousedown',e=>onDown(e.clientX,e.clientY));
+    addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
+    addEventListener('mouseup',onUp);
 
-    // ==== Animação (idle + inércia) ====
-    const clock = new THREE.Clock();
+    renderer.domElement.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)onDown(t.clientX,t.clientY);},{passive:true});
+    renderer.domElement.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)onMove(t.clientX,t.clientY);},{passive:true});
+    renderer.domElement.addEventListener('touchend',onUp);
+
+    const clock=new THREE.Clock();
     function tick(){
-      const dt = Math.min(clock.getDelta(), 0.032);
-      if(!isDown){ group.rotation.y += vy; group.rotation.x += vx; vy *= 0.94; vx *= 0.94; if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; } }
-      renderer.render(scene, camera); requestAnimationFrame(tick);
+      const dt=Math.min(clock.getDelta(),0.032);
+      if(!isDown){group.rotation.y+=vy;group.rotation.x+=vx;vy*=0.94;vx*=0.94;if(CONFIG.rotateOnIdle&&(Math.abs(vx)+Math.abs(vy)<0.0006)){group.rotation.y+=0.003;}}
+      renderer.render(scene,camera);
+      requestAnimationFrame(tick);
     }
     tick();
-      const CTA_URL = 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA';
-    const ctaEl = document.getElementById('ctaJoin');
-    if (ctaEl) { ctaEl.addEventListener('click', ()=> window.open(CTA_URL, '_blank')); }
-  </script></body>
+
+    const ctaBtn=document.getElementById('ctaJoin');
+    ctaBtn.addEventListener('click',()=>window.open(CONFIG.ctaUrl,'_blank'));
+  </script>
+</body>
 </html>
