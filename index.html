@@ -10,19 +10,20 @@
     *{ box-sizing:border-box; margin:0; padding:0 }
     html,body{ height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); overflow-x:hidden; }
 
-    /* Fundo fica ATRÁS do conteúdo */
+    /* Fundo fica ATRÁS do conteúdo (desktop + mobile) */
     body{ background:transparent; }
     body::before{
       content:"";
       position:fixed;
       inset:0;
       background: url('./backgroundpc.png') center/cover no-repeat;
-      z-index:-1;              /* atrás de tudo */
-      pointer-events:none;     /* não bloqueia cliques */
+      z-index:-1;            /* atrás de tudo */
+      pointer-events:none;   /* não bloqueia cliques */
     }
     @media (max-width:768px){
       body::before{
-        background: url('./backgroundmoblie.png') center/cover no-repeat; /* usa o nome do seu arquivo */
+        /* use o nome exato do arquivo que você subiu (está como backgroundmoblie.png) */
+        background: url('./backgroundmoblie.png') center/cover no-repeat;
       }
     }
 
@@ -36,19 +37,20 @@
       gap:18px;
       text-align:center;
       position:relative;
-      z-index:1;               /* acima do fundo */
+      z-index:1;             /* acima do fundo */
       padding:24px 16px 40px;
     }
 
     .logo3d{
       width:min(92vw, 820px);
-      height:40vh;
+      height:42vh;
       min-height:300px;
       display:flex;
       align-items:center;
       justify-content:center;
     }
 
+    .hint{ font-size:12px; opacity:.6; margin-top:4px }
     .cta-text{ max-width:62ch; font-size:clamp(14px,2.2vw,18px); line-height:1.5; opacity:.9 }
     .cta-btn{
       cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px;
@@ -57,8 +59,6 @@
     }
     .cta-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.15); }
     .cta-btn:active{ transform:translateY(0); }
-
-    .hint{ font-size:12px; opacity:.6; margin-top:6px }
   </style>
 </head>
 <body>
@@ -73,20 +73,20 @@
   </div>
 
   <script type="module">
-    /* Imports por URL (funciona direto no navegador) */
+    /* Imports por URL (ESM) — funcionam direto no navegador */
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
-    /* ==== CONFIG EDITÁVEL ==== */
+    /* ===================== CONFIG EDITÁVEL ===================== */
     const CONFIG = {
       modelUrl: './logo3dpreta.gltf',               // seu .gltf
-      resourcePath: './',                      // onde estão .bin e /textures
+      resourcePath: './',                      // onde estão .bin e /textures (mesmo nível do .gltf)
       initialScale: 0.9,                       // tamanho da logo
       rotateOnIdle: true,                      // gira de leve quando parado
       ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
     };
 
-    /* Cena básica */
+    /* ===== Cena básica ===== */
     const wrap = document.getElementById('logo3d');
     const scene = new THREE.Scene();
     scene.background = null; // transparente, mostra o fundo do body::before
@@ -107,34 +107,71 @@
     const group = new THREE.Group();
     scene.add(group);
 
-    // Loader GLTF configurado para assets externos
+    /* ===== Overlay de diagnóstico (exibe erros/progresso) ===== */
+    function showOverlay(msg){
+      let el = document.getElementById('debugMsg');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'debugMsg';
+        el.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;font:12px/1.4 system-ui;z-index:9999;opacity:.95;max-width:90vw;text-align:center';
+        document.body.appendChild(el);
+      }
+      el.innerHTML = msg || '';
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    /* ===== Fallback imediato: cubo (pra validar que a cena aparece) ===== */
+    const fbGeo = new THREE.BoxGeometry(1,1,1);
+    const fbMat  = new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 });
+    const fbCube = new THREE.Mesh(fbGeo, fbMat);
+    group.add(fbCube);
+
+    /* ===== Loader GLTF configurado para assets externos ===== */
     const loader = new GLTFLoader();
     loader.setResourcePath(CONFIG.resourcePath || './'); // busca .bin e /textures aqui
 
+    console.log('[GLTF] carregando', CONFIG.modelUrl);
     loader.load(
       CONFIG.modelUrl,
       (gltf)=>{
+        // remove fallback
+        try{
+          group.remove(fbCube);
+          fbCube.geometry.dispose();
+          fbCube.material.dispose();
+        }catch{}
+
         const model = gltf.scene;
-        // Normaliza escala
+        // normaliza escala
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3()).length();
         const scale = (CONFIG.initialScale * 1.6) / (size || 1);
         model.scale.setScalar(scale);
-        model.rotation.set(0, Math.PI * 0.1, 0);
+        model.rotation.set(0, Math.PI*0.1, 0);
+
+        // pequeno ajuste de material (se existir)
+        model.traverse(o=>{
+          if(o.isMesh && o.material && 'envMapIntensity' in o.material){
+            o.material.envMapIntensity = 1.0;
+          }
+        });
+
         group.add(model);
+        showOverlay('');
+        console.log('[GLTF] OK');
       },
-      undefined,
+      (xhr)=>{
+        const pct = xhr.total ? Math.round((xhr.loaded/xhr.total)*100) : null;
+        if(pct!==null) showOverlay(`carregando logo 3D… ${pct}%`);
+      },
       (err)=>{
-        console.error('Falha ao carregar GLTF:', err);
-        // Fallback: cubo para confirmar que a cena funciona
-        const geo = new THREE.BoxGeometry(1,1,1);
-        const mat = new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 });
-        const cube = new THREE.Mesh(geo, mat);
-        group.add(cube);
+        console.error('[GLTF] erro', err);
+        showOverlay('⚠️ Não consegui carregar a logo 3D (.gltf).<br>Veja em Network se faltam <b>logo3d.bin</b> e/ou <b>textures/…</b>.');
+        // mantém o cubo pra você ver a cena funcionando
       }
     );
 
-    // Responsivo
+    /* ===== Responsivo ===== */
     function resize(){
       const w = wrap.clientWidth, h = wrap.clientHeight;
       renderer.setSize(w, h, false);
@@ -143,7 +180,7 @@
     resize();
     addEventListener('resize', resize);
 
-    // Arraste (desktop e mobile) com inércia
+    /* ===== Arraste (desktop e mobile) com inércia ===== */
     let isDown=false, lastX=0,lastY=0, vx=0, vy=0;
     const onDown=(x,y)=>{ isDown=true; lastX=x; lastY=y; };
     const onMove=(x,y)=>{
@@ -164,7 +201,7 @@
     renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX,t.clientY); }, {passive:true});
     renderer.domElement.addEventListener('touchend', onUp);
 
-    // Loop
+    /* ===== Loop ===== */
     const clock = new THREE.Clock();
     function tick(){
       const dt = Math.min(clock.getDelta(), 0.032);
@@ -178,7 +215,7 @@
     }
     tick();
 
-    // Botão
+    /* ===== Botão ===== */
     document.getElementById('ctaJoin').addEventListener('click', ()=>{
       window.open(CONFIG.ctaUrl, '_blank');
     });
