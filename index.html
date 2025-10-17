@@ -7,15 +7,64 @@
   <style>
     :root{ --bg:#0b0b0b; --fg:#eaeaea; }
     html,body{height:100%}
-    body{ margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
 
-    .logo3d-wrap{ position:relative; width:100%; height:60vh; min-height:360px; max-height:78vh; display:grid; place-items:center; overflow:hidden; }
-    canvas{ display:block; width:100%; height:100%; }
+    /* ====== Área do 3D com background por trás ====== */
+    .logo3d-wrap{
+      position:relative;
+      width:100%;
+      height:60vh;
+      min-height:360px;
+      max-height:78vh;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      isolation:isolate; /* garante a pilha de camadas local */
+    }
+    /* background fica atrás do canvas, sem bloquear cliques */
+    .logo3d-wrap::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image:url("backgroundpc.png");   /* <- DESKTOP */
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      z-index:0;
+      pointer-events:none;
+      opacity:1;               /* ajuste se quiser ~0.9 para suavizar */
+      transform:translateZ(0); /* evita artefatos em alguns mobiles */
+    }
+    /* Mobile: troca a imagem */
+    @media (max-width: 640px){
+      .logo3d-wrap{ height:56vh; min-height:300px }
+      .logo3d-wrap::before{
+        background-image:url("backgroundmoblie.png");  /* <- MOBILE */
+      }
+    }
 
-    .hint{ position:absolute; bottom:10px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.75;}
-    /* .perm removido — giroscópio desativado no mobile */
-    .msg{ position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:12px; background:#141414; border:1px solid #2a2a2a; padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%; text-align:center }
-    @media (max-width:640px){ .logo3d-wrap{ height:56vh; min-height:300px } }
+    /* Canvas por cima do background */
+    canvas{
+      display:block;
+      width:100%; height:100%;
+      position:relative; z-index:1;
+    }
+
+    .hint{
+      position:absolute; bottom:10px; left:50%;
+      transform:translateX(-50%); font-size:12px; opacity:.75; z-index:2;
+    }
+    .msg{
+      position:absolute; top:10px; left:50%;
+      transform:translateX(-50%); font-size:12px;
+      background:#141414; border:1px solid #2a2a2a;
+      padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%;
+      text-align:center; z-index:2;
+    }
   </style>
 
   <!-- Import Map: resolve "three" e addons no navegador -->
@@ -28,27 +77,16 @@
 </head>
 <body>
   <div class="logo3d-wrap" id="logo3d">
-    <div class="msg" id="msg" style="display:none"></div><div class="hint">arraste com o mouse ou com o dedo para girar</div>
+    <div class="msg" id="msg" style="display:none"></div>
+    <div class="hint">arraste com o mouse ou com o dedo para girar</div>
   </div>
 
   <script type="module">
-    /* ===================== CONFIG (.GLTF) =====================
-       Use um .gltf com arquivos externos (.bin, /textures, etc.).
-       Coloque resourcePath apontando para a pasta onde estão esses assets.
-       Exemplos de estrutura:
-       ./models/logo3d.gltf
-       ./models/logo3d.bin
-       ./models/textures/diffuse.png
-
-       Se o modelo estiver comprimido em DRACO, o loader abaixo já suporta.
-    ============================================================ */
+    /* ===================== CONFIG (.GLTF) ===================== */
     const CONFIG = {
-      // Caminho do arquivo .gltf (pode incluir subpasta)
-      modelUrl: './logo3d.gltf',
-      // Pasta onde estão .bin e /textures (terminar com '/')
+      modelUrl: './logo3dpreta.gltf',
       resourcePath: './',
-      // Se preferir separar basePath + filename: defina basePath e passe só o nome do arquivo em modelUrl
-      basePath: null, // ex.: './models/'
+      basePath: null,
       crossOrigin: 'anonymous',
       initialScale: 1.2,
       rotateOnIdle: true,
@@ -60,20 +98,19 @@
 
     const wrap = document.getElementById('logo3d');
     const msg  = document.getElementById('msg');
-    function showMsg(text){ msg.innerHTML = text; msg.style.display = 'block'; }
+    function showMsg(text){ msg.innerHTML = text; msg.style.display = text ? 'block' : 'none'; }
 
-    // Aviso se estiver rodando em file:// (recomendado usar servidor local)
     if (location.protocol === 'file:') {
       showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server) para evitar bloqueios ao carregar .gltf e texturas.');
     }
 
     const scene = new THREE.Scene();
-    scene.background = null;
+    scene.background = null; // IMPORTANTE: mantém o fundo transparente pro background aparecer
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true }); // alpha:true para fundo transparente
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     wrap.appendChild(renderer.domElement);
 
@@ -86,7 +123,6 @@
     const group = new THREE.Group();
     scene.add(group);
 
-    // ===== Loader GLTF com DRACO + resourcePath/basePath =====
     const loader = new GLTFLoader();
     const draco = new DRACOLoader();
     draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
@@ -108,11 +144,9 @@
           model.traverse((o)=>{ if(o.isMesh){ o.castShadow = o.receiveShadow = true; if(o.material) o.material.envMapIntensity = 1.0; }});
           model.rotation.set(0, Math.PI*0.1, 0);
           group.add(model);
-          showMsg(''); // esconde mensagens
+          showMsg('');
         },
-        (xhr)=>{
-          // Progresso opcional: xhr.loaded / xhr.total (pode ser 0 quando não informado)
-        },
+        undefined,
         (err)=>{
           console.error('Erro ao carregar GLTF:', err);
           showMsg('Não consegui carregar seu <b>.gltf</b>. Verifique:<br>• <b>resourcePath</b> aponta para a pasta com <b>.bin</b> e <b>textures/</b><br>• Rode via servidor local (http://).<br>Carregando um cubo de teste...');
@@ -125,7 +159,6 @@
     }
     loadModel();
 
-    // ===== Responsivo =====
     function resize(){
       const w = wrap.clientWidth, h = wrap.clientHeight;
       renderer.setSize(w, h, false);
@@ -134,7 +167,7 @@
     resize();
     addEventListener('resize', resize);
 
-    // ==== Interação arrastar/inércia ====
+    // Interação arrastar + inércia
     let isDown = false, lastX = 0, lastY = 0, vx = 0, vy = 0;
     const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
     const onMove = (x,y)=>{
@@ -150,11 +183,14 @@
     renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX, t.clientY); }, {passive:true});
     renderer.domElement.addEventListener('touchend', onUp);
 
-    // ==== Animação (idle + inércia) ====
     const clock = new THREE.Clock();
     function tick(){
       const dt = Math.min(clock.getDelta(), 0.032);
-      if(!isDown){ group.rotation.y += vy; group.rotation.x += vx; vy *= 0.94; vx *= 0.94; if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; } }
+      if(!isDown){
+        group.rotation.y += vy; group.rotation.x += vx;
+        vy *= 0.94; vx *= 0.94;
+        if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; }
+      }
       renderer.render(scene, camera); requestAnimationFrame(tick);
     }
     tick();
