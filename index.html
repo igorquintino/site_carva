@@ -6,132 +6,182 @@
   <title>CARVA — Lista de Espera</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{
-      --bg:#fff;
-      --fg:#111;
-    }
-    *{box-sizing:border-box; margin:0; padding:0}
-    html,body{height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); background:var(--bg); overflow-x:hidden;}
+    :root{ --bg:#ffffff; --fg:#111111; }
+    *{ box-sizing:border-box; margin:0; padding:0 }
+    html,body{ height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); overflow-x:hidden; }
 
+    /* Fundo fica ATRÁS do conteúdo */
+    body{ background:transparent; }
     body::before{
       content:"";
       position:fixed;
       inset:0;
-      background:url('./backgroundpc.png') center/cover no-repeat;
-      z-index:0; /* estava -1: ficava atrás do background do body */
+      background: url('./backgroundpc.png') center/cover no-repeat;
+      z-index:-1;              /* atrás de tudo */
+      pointer-events:none;     /* não bloqueia cliques */
     }
-
     @media (max-width:768px){
       body::before{
-        background:url('./backgroundmoblie.png') center/cover no-repeat;
+        background: url('./backgroundmoblie.png') center/cover no-repeat; /* usa o nome do seu arquivo */
       }
     }
+
+    /* Conteúdo principal */
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      text-align:center;
+      position:relative;
+      z-index:1;               /* acima do fundo */
+      padding:24px 16px 40px;
     }
 
-    .wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; position:relative; z-index:1;}
+    .logo3d{
+      width:min(92vw, 820px);
+      height:40vh;
+      min-height:300px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
 
-    .logo3d{ width:100%; height:40vh; display:flex; align-items:center; justify-content:center; }
-
-    .cta-text{ font-size:clamp(14px,2.2vw,18px); line-height:1.5; max-width:62ch; margin:20px auto; }
-
-    .cta-btn{ cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px; background:#111; color:#fff; font-weight:800; letter-spacing:.02em; text-transform:lowercase; box-shadow:0 10px 20px rgba(0,0,0,.08); transition:transform .2s, box-shadow .2s; }
+    .cta-text{ max-width:62ch; font-size:clamp(14px,2.2vw,18px); line-height:1.5; opacity:.9 }
+    .cta-btn{
+      cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px;
+      background:#111; color:#fff; font-weight:800; letter-spacing:.02em; text-transform:lowercase;
+      box-shadow:0 10px 20px rgba(0,0,0,.08); transition:transform .18s, box-shadow .18s;
+    }
     .cta-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.15); }
     .cta-btn:active{ transform:translateY(0); }
 
+    .hint{ font-size:12px; opacity:.6; margin-top:6px }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="logo3d" id="logo3d"></div>
-    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
-    <button class="cta-btn" id="ctaJoin">entrar na Lista</button>
+    <div class="hint">arraste com o mouse ou com o dedo para girar</div>
+
+    <p class="cta-text">
+      O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop
+    </p>
+    <button class="cta-btn" id="ctaJoin">entrar na lista</button>
   </div>
 
   <script type="module">
+    /* Imports por URL (funciona direto no navegador) */
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
+    /* ==== CONFIG EDITÁVEL ==== */
     const CONFIG = {
-      modelUrl: './logo3dpreta.gltf',
-      initialScale: 0.9,
-      rotateOnIdle: true,
+      modelUrl: './logo3dpreta.gltf',               // seu .gltf
+      resourcePath: './',                      // onde estão .bin e /textures
+      initialScale: 0.9,                       // tamanho da logo
+      rotateOnIdle: true,                      // gira de leve quando parado
       ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
     };
 
+    /* Cena básica */
     const wrap = document.getElementById('logo3d');
     const scene = new THREE.Scene();
+    scene.background = null; // transparente, mostra o fundo do body::before
+
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
 
-    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     wrap.appendChild(renderer.domElement);
 
-    const light1 = new THREE.DirectionalLight(0xffffff,2.2); light1.position.set(2,3,4);
-    const light2 = new THREE.AmbientLight(0xffffff,.35);
-    scene.add(light1, light2);
+    // Luzes
+    const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4);
+    const fill = new THREE.AmbientLight(0xffffff, .35);
+    scene.add(key, fill);
 
+    // Grupo para rotacionar com arraste
     const group = new THREE.Group();
     scene.add(group);
 
+    // Loader GLTF configurado para assets externos
     const loader = new GLTFLoader();
-    // Se seu .gltf referencia .bin/textures, garanta que estão no mesmo diretório
-    loader.setResourcePath('./'); // ajuda o loader a encontrar .bin e /textures
-    loader.load(CONFIG.modelUrl, gltf=>{
-      const model = gltf.scene;
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3()).length();
-      const scale = (CONFIG.initialScale*1.6)/(size||1);
-      model.scale.setScalar(scale);
-      group.add(model);
-    }, undefined, err=>{
-      console.error('Erro ao carregar modelo:', err);
-      // fallback visual para ver se a cena está ok
-      const geo = new THREE.BoxGeometry(1,1,1);
-      const mat = new THREE.MeshStandardMaterial({color:0x111111, metalness:.2, roughness:.5});
-      group.add(new THREE.Mesh(geo,mat));
-    });
-      const size = box.getSize(new THREE.Vector3()).length();
-      const scale = (CONFIG.initialScale*1.6)/(size||1);
-      model.scale.setScalar(scale);
-      group.add(model);
-    }, undefined, err=>{
-      console.error('Erro ao carregar modelo:', err);
-    });
+    loader.setResourcePath(CONFIG.resourcePath || './'); // busca .bin e /textures aqui
 
+    loader.load(
+      CONFIG.modelUrl,
+      (gltf)=>{
+        const model = gltf.scene;
+        // Normaliza escala
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3()).length();
+        const scale = (CONFIG.initialScale * 1.6) / (size || 1);
+        model.scale.setScalar(scale);
+        model.rotation.set(0, Math.PI * 0.1, 0);
+        group.add(model);
+      },
+      undefined,
+      (err)=>{
+        console.error('Falha ao carregar GLTF:', err);
+        // Fallback: cubo para confirmar que a cena funciona
+        const geo = new THREE.BoxGeometry(1,1,1);
+        const mat = new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 });
+        const cube = new THREE.Mesh(geo, mat);
+        group.add(cube);
+      }
+    );
+
+    // Responsivo
     function resize(){
       const w = wrap.clientWidth, h = wrap.clientHeight;
-      renderer.setSize(w,h,false);
-      camera.aspect = w/h;
-      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
     }
     resize();
     addEventListener('resize', resize);
 
-    let isDown=false, lastX=0,lastY=0,vx=0,vy=0;
-    const onDown=(x,y)=>{isDown=true;lastX=x;lastY=y;};
-    const onMove=(x,y)=>{if(!isDown)return;const dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;const k=0.005;vy=-dx*k;vx=-dy*k;group.rotation.y+=vy;group.rotation.x+=vx;group.rotation.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,group.rotation.x));};
-    const onUp=()=>{isDown=false;};
+    // Arraste (desktop e mobile) com inércia
+    let isDown=false, lastX=0,lastY=0, vx=0, vy=0;
+    const onDown=(x,y)=>{ isDown=true; lastX=x; lastY=y; };
+    const onMove=(x,y)=>{
+      if(!isDown) return;
+      const dx=x-lastX, dy=y-lastY; lastX=x; lastY=y;
+      const k=0.005; vy = -dx*k; vx = -dy*k;
+      group.rotation.y += vy;
+      group.rotation.x += vx;
+      group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
+    };
+    const onUp=()=>{ isDown=false; };
 
-    renderer.domElement.addEventListener('mousedown',e=>onDown(e.clientX,e.clientY));
-    addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
-    addEventListener('mouseup',onUp);
+    renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX,e.clientY));
+    addEventListener('mousemove', e=> onMove(e.clientX,e.clientY));
+    addEventListener('mouseup', onUp);
 
-    renderer.domElement.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)onDown(t.clientX,t.clientY);},{passive:true});
-    renderer.domElement.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)onMove(t.clientX,t.clientY);},{passive:true});
-    renderer.domElement.addEventListener('touchend',onUp);
+    renderer.domElement.addEventListener('touchstart', e=>{ const t=e.touches[0]; if(t) onDown(t.clientX,t.clientY); }, {passive:true});
+    renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX,t.clientY); }, {passive:true});
+    renderer.domElement.addEventListener('touchend', onUp);
 
-    const clock=new THREE.Clock();
+    // Loop
+    const clock = new THREE.Clock();
     function tick(){
-      const dt=Math.min(clock.getDelta(),0.032);
-      if(!isDown){group.rotation.y+=vy;group.rotation.x+=vx;vy*=0.94;vx*=0.94;if(CONFIG.rotateOnIdle&&(Math.abs(vx)+Math.abs(vy)<0.0006)){group.rotation.y+=0.003;}}
-      renderer.render(scene,camera);
+      const dt = Math.min(clock.getDelta(), 0.032);
+      if(!isDown){
+        group.rotation.y += vy; group.rotation.x += vx;
+        vy *= 0.94; vx *= 0.94; // damping
+        if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006) { group.rotation.y += 0.003; }
+      }
+      renderer.render(scene, camera);
       requestAnimationFrame(tick);
     }
     tick();
 
-    const ctaBtn=document.getElementById('ctaJoin');
-    ctaBtn.addEventListener('click',()=>window.open(CONFIG.ctaUrl,'_blank'));
+    // Botão
+    document.getElementById('ctaJoin').addEventListener('click', ()=>{
+      window.open(CONFIG.ctaUrl, '_blank');
+    });
   </script>
 </body>
 </html>
