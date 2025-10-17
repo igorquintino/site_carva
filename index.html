@@ -3,156 +3,160 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CARVA — Lista de Espera</title>
+  <title>Logo 3D Parallax</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111;overflow-x:hidden}
-    /* Fundo direto no body (sempre atrás) */
-    body{
-      background:#fff url('./backgroundpc.png') center/cover no-repeat fixed;
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
     }
-    @media (max-width:768px){
-      body{
-        background-image:url('./backgroundmoblie.png'); /* use o nome EXATO do arquivo */
-        background-attachment:scroll;
+
+    /* ===== Fundo padrão: MOBILE ===== */
+    body {
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-image: url("img/bg-mobile.jpg");
+    }
+
+    /* ===== Desktop / telas maiores ===== */
+    @media (min-width: 768px) {
+      body {
+        background-image: url("./backgroundpc.png");
       }
     }
-    .wrap{
-      min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:16px;text-align:center;padding:24px 16px 40px;
+
+    /* Canvas do three.js ocupa toda a tela e é transparente */
+    canvas.webgl {
+      position: fixed;
+      inset: 0;
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none; /* permite o parallax via JS */
     }
-    #logo3d{
-      width:min(92vw,820px);height:46vh;min-height:320px;
-      display:flex;align-items:center;justify-content:center;
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #ddd;
+      font: 500 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      letter-spacing: .4px;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.4);
     }
-    .hint{font-size:12px;opacity:.6}
-    .cta-text{max-width:62ch;font-size:clamp(14px,2.2vw,18px);line-height:1.5;opacity:.9}
-    .cta-btn{cursor:pointer;padding:.9em 1.2em;border:none;border-radius:14px;background:#111;color:#fff;
-      font-weight:800;letter-spacing:.02em;text-transform:lowercase;box-shadow:0 10px 20px rgba(0,0,0,.08)}
-    /* Overlay de debug (mostra erros/progresso) */
-    #debugMsg{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;color:#fff;
-      padding:8px 12px;border-radius:10px;font:12px/1.4 system-ui;z-index:9999;opacity:.95;max-width:92vw;text-align:center;display:none}
+    #loading.hidden { opacity: 0; transition: opacity .4s ease; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="logo3d"></div>
-    <div class="hint">arraste com o mouse ou com o dedo para girar</div>
+  <div id="loading">Carregando logo 3D…</div>
 
-    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
-    <button class="cta-btn" id="ctaJoin">entrar na lista</button>
-  </div>
-  <div id="debugMsg"></div>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
-  <!-- Three.js UMD (clássico, sem modules) -->
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <!-- GLTFLoader UMD (usa THREE.GLTFLoader) -->
-  <script src="https://unpkg.com/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+    const MODEL_URL = './logo3d.gltf'; // caminho do seu arquivo .gltf
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(0, 0, 3);
 
-  <script>
-    // ===== CONFIG =====
-    const CONFIG = {
-      modelUrl: './logo3d.gltf',     // seu arquivo .gltf (embedded de preferência)
-      initialScale: 1.0,
-      rotateOnIdle: true,
-      ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
-    };
-
-    // Overlay
-    const dbg = document.getElementById('debugMsg');
-    const show = (txt)=>{ dbg.innerHTML = txt||''; dbg.style.display = txt ? 'block':'none'; };
-
-    // ===== Cena
-    const wrap = document.getElementById('logo3d');
-    const scene = new THREE.Scene(); // sem background: canvas é transparente
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 3.0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, canvas: createCanvas() });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    wrap.appendChild(renderer.domElement);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearAlpha(0);
 
-    const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2,3,4);
-    const amb = new THREE.AmbientLight(0xffffff, .35);
-    scene.add(key, amb);
+    function createCanvas() {
+      const c = document.createElement('canvas');
+      c.className = 'webgl';
+      document.body.appendChild(c);
+      return c;
+    }
 
-    const group = new THREE.Group();
-    scene.add(group);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambient);
+    const directional = new THREE.DirectionalLight(0xffffff, 1);
+    directional.position.set(2, 3, 4);
+    scene.add(directional);
 
-    // Fallback: cubo aparece até o modelo carregar
-    const fb = new THREE.Mesh(
-      new THREE.BoxGeometry(1,1,1),
-      new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 })
-    );
-    group.add(fb);
+    const logoGroup = new THREE.Group();
+    scene.add(logoGroup);
 
-    // ===== GLTFLoader clássico
-    // Se seu .gltf NÃO for embedded, ele vai referenciar .bin/imagens -> vai falhar e o overlay avisa.
-    const loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
     loader.load(
-      CONFIG.modelUrl,
-      (gltf)=>{
-        try{ group.remove(fb); fb.geometry.dispose(); fb.material.dispose(); }catch{}
-        const model = gltf.scene;
-        // normaliza escala
-        const box = new THREE.Box3().setFromObject(model);
-        const s = box.getSize(new THREE.Vector3());
-        const diag = Math.hypot(s.x,s.y,s.z) || 1;
-        model.scale.setScalar((CONFIG.initialScale * 1.6) / diag);
-        model.rotation.set(0, Math.PI*0.1, 0);
-        group.add(model);
-        show('');
+      MODEL_URL,
+      (gltf) => {
+        const model = gltf.scene || gltf.scenes[0];
+        logoGroup.add(model);
+        normalizeAndCenter(model, 1.3);
+        logoGroup.rotation.set(0.05, -0.15, 0);
+        hideLoading();
+        animate();
       },
-      (xhr)=>{
-        const pct = xhr.total ? Math.round((xhr.loaded/xhr.total)*100) : null;
-        if (pct !== null) show(`carregando logo 3D… ${pct}%`);
-      },
-      (err)=>{
-        console.error('GLTF erro:', err);
-        show('⚠️ Falha ao carregar o .gltf. Se ele não for <b>embedded</b>, precisa do <b>.bin</b>/imagens ao lado.');
-        // mantém o cubo pra cena não ficar vazia
+      undefined,
+      (error) => {
+        hideLoading();
+        console.error('Erro ao carregar o modelo:', error);
+        alert('Erro ao carregar o modelo. Verifique o caminho do arquivo.');
       }
     );
 
-    // Responsivo
-    function resize(){
-      const w = wrap.clientWidth, h = wrap.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w/h; camera.updateProjectionMatrix();
+    function hideLoading() {
+      const el = document.getElementById('loading');
+      if (el) el.classList.add('hidden');
+      setTimeout(() => el?.remove(), 500);
     }
-    resize(); addEventListener('resize', resize);
 
-    // Arraste com inércia
-    let down=false,lx=0,ly=0,vx=0,vy=0;
-    const downFn=(x,y)=>{ down=true; lx=x; ly=y; };
-    const moveFn=(x,y)=>{ if(!down) return; const dx=x-lx, dy=y-ly; lx=x; ly=y;
-      const k=.005; vy=-dx*k; vx=-dy*k; group.rotation.y+=vy; group.rotation.x+=vx;
-      group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
-    };
-    const upFn=()=>{ down=false; };
-    renderer.domElement.addEventListener('mousedown', e=>downFn(e.clientX,e.clientY));
-    addEventListener('mousemove', e=>moveFn(e.clientX,e.clientY));
-    addEventListener('mouseup', upFn);
-    renderer.domElement.addEventListener('touchstart', e=>{ const t=e.touches[0]; if(t) downFn(t.clientX,t.clientY); }, {passive:true});
-    renderer.domElement.addEventListener('touchmove', e=>{ const t=e.touches[0]; if(t) moveFn(t.clientX,t.clientY); }, {passive:true});
-    renderer.domElement.addEventListener('touchend', upFn);
+    function normalizeAndCenter(obj, targetSize = 1) {
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      obj.position.sub(center);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = targetSize / maxDim;
+      obj.scale.setScalar(scale);
+    }
 
-    // Loop
-    const clock = new THREE.Clock();
-    function tick(){
-      const dt = Math.min(clock.getDelta(), 0.032);
-      if(!down){
-        group.rotation.y += vy; group.rotation.x += vx;
-        vy *= 0.94; vx *= 0.94;
-        if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006) group.rotation.y += 0.003;
-      }
+    const targetRot = new THREE.Vector2(0, 0);
+    const currentRot = new THREE.Vector2(0, 0);
+    let hasPointer = false;
+
+    window.addEventListener('pointermove', (e) => {
+      hasPointer = true;
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+      targetRot.y = nx * 0.5;
+      targetRot.x = -ny * 0.4;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const t = e.touches[0];
+      const nx = (t.clientX / window.innerWidth) * 2 - 1;
+      const ny = (t.clientY / window.innerHeight) * 2 - 1;
+      targetRot.y = nx * 0.5;
+      targetRot.x = -ny * 0.4;
+    }, { passive: true });
+
+    function animate(now = 0) {
+      requestAnimationFrame(animate);
+      const lerp = 0.08;
+      currentRot.lerp(targetRot, lerp);
+      logoGroup.rotation.x = currentRot.x;
+      logoGroup.rotation.y = currentRot.y;
+      const t = now * 0.001;
+      logoGroup.position.y = Math.sin(t * 0.7) * 0.02;
       renderer.render(scene, camera);
-      requestAnimationFrame(tick);
     }
-    tick();
 
-    document.getElementById('ctaJoin').addEventListener('click', ()=>{
-      window.open('https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA', '_blank');
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
