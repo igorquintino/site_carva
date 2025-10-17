@@ -18,7 +18,7 @@
       position:fixed;
       inset:0;
       background:url('./backgroundpc.png') center/cover no-repeat;
-      z-index:-1;
+      z-index:0; /* estava -1: ficava atrás do background do body */
     }
 
     @media (max-width:768px){
@@ -26,8 +26,9 @@
         background:url('./backgroundmoblie.png') center/cover no-repeat;
       }
     }
+    }
 
-    .wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center;}
+    .wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; position:relative; z-index:1;}
 
     .logo3d{ width:100%; height:40vh; display:flex; align-items:center; justify-content:center; }
 
@@ -74,9 +75,22 @@
     scene.add(group);
 
     const loader = new GLTFLoader();
+    // Se seu .gltf referencia .bin/textures, garanta que estão no mesmo diretório
+    loader.setResourcePath('./'); // ajuda o loader a encontrar .bin e /textures
     loader.load(CONFIG.modelUrl, gltf=>{
       const model = gltf.scene;
       const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3()).length();
+      const scale = (CONFIG.initialScale*1.6)/(size||1);
+      model.scale.setScalar(scale);
+      group.add(model);
+    }, undefined, err=>{
+      console.error('Erro ao carregar modelo:', err);
+      // fallback visual para ver se a cena está ok
+      const geo = new THREE.BoxGeometry(1,1,1);
+      const mat = new THREE.MeshStandardMaterial({color:0x111111, metalness:.2, roughness:.5});
+      group.add(new THREE.Mesh(geo,mat));
+    });
       const size = box.getSize(new THREE.Vector3()).length();
       const scale = (CONFIG.initialScale*1.6)/(size||1);
       model.scale.setScalar(scale);
