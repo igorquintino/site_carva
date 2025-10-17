@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CARVA — Lista de Espera</title>
+  <title>CARVA — Debug 3D + BG</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --fg:#111111; }
+    :root{ --fg:#111; }
     *{ box-sizing:border-box; margin:0; padding:0 }
-    html,body{ height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); overflow-x:hidden; }
+    html,body{ height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg) }
 
-    /* Fundo direto no body */
+    /* Fundo direto no body (desktop + mobile) */
     body{
       background: #ffffff url('./backgroundpc.png') center/cover no-repeat fixed;
+      overflow-x:hidden;
     }
     @media (max-width:768px){
       body{
-        background-image: url('./backgroundmoblie.png'); /* cuidado com o nome do arquivo */
+        background-image: url('./backgroundmoblie.png'); /* nome deve bater com o arquivo */
         background-attachment: scroll;
       }
     }
@@ -27,19 +28,24 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:18px;
+      gap:16px;
       text-align:center;
       padding:24px 16px 40px;
     }
+
+    /* Bordas para ver o container (debug visual) */
     .logo3d{
       width:min(92vw, 820px);
-      height:42vh;
-      min-height:300px;
+      height:46vh;           /* altura REAL pra garantir canvas visível */
+      min-height:320px;
       display:flex;
       align-items:center;
       justify-content:center;
+      border:2px dashed rgba(17,17,17,.25); /* <<< mostra o contorno do container */
+      background: rgba(255,255,255,.0);
     }
-    .hint{ font-size:12px; opacity:.6; margin-top:4px }
+
+    .hint{ font-size:12px; opacity:.6 }
     .cta-text{ max-width:62ch; font-size:clamp(14px,2.2vw,18px); line-height:1.5; opacity:.9 }
     .cta-btn{
       cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px;
@@ -47,38 +53,52 @@
       box-shadow:0 10px 20px rgba(0,0,0,.08); transition:transform .18s, box-shadow .18s;
     }
     .cta-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.15); }
-    .cta-btn:active{ transform:translateY(0); }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="logo3d" id="logo3d"></div>
-    <div class="hint"></div>
+    <div class="hint">arraste com o mouse ou com o dedo para girar</div>
 
     <p class="cta-text">
-      Entra pra lista e receba o convite pro próximo drop
+      O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop
     </p>
     <button class="cta-btn" id="ctaJoin">entrar na lista</button>
   </div>
 
   <script type="module">
-    // Three.js ESM direto via URL
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
-    // === CONFIG — troque o nome do seu arquivo aqui:
+    // ====== TROCA RÁPIDA DO MODELO ======
+    const USE_KNOWN_TEST = true; // comece TRUE. se aparecer o capacete, mude pra FALSE e use seu gltf
+    const MODEL_TEST = 'https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf';
+
     const CONFIG = {
-      modelUrl: './logo3d.gltf',   // <<< seu .gltf embedded
-      initialScale: 0.9,
+      modelUrl: './logo3d.gltf',  // seu arquivo (quando USE_KNOWN_TEST=false)
+      initialScale: 1.0,
       rotateOnIdle: true,
       ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
     };
+
+    // Overlay de diagnóstico
+    function showOverlay(msg){
+      let el = document.getElementById('debugMsg');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'debugMsg';
+        el.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;font:12px/1.4 system-ui;z-index:9999;opacity:.95;max-width:92vw;text-align:center';
+        document.body.appendChild(el);
+      }
+      el.innerHTML = msg || '';
+      el.style.display = msg ? 'block' : 'none';
+    }
 
     // Cena
     const wrap = document.getElementById('logo3d');
     const scene = new THREE.Scene(); scene.background = null;
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 3.2);
+    camera.position.set(0, 0.2, 3.0);
 
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -90,63 +110,43 @@
 
     const group = new THREE.Group(); scene.add(group);
 
-    // Overlay de diagnóstico
-    function showOverlay(msg){
-      let el = document.getElementById('debugMsg');
-      if(!el){
-        el = document.createElement('div');
-        el.id = 'debugMsg';
-        el.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;font:12px/1.4 system-ui;z-index:9999;opacity:.95;max-width:90vw;text-align:center';
-        document.body.appendChild(el);
-      }
-      el.innerHTML = msg || '';
-      el.style.display = msg ? 'block' : 'none';
-    }
-
-    // Fallback: cubo (aparece até a logo carregar com sucesso)
+    // Fallback: cubo (aparece até o modelo carregar com sucesso)
     const fb = new THREE.Mesh(
       new THREE.BoxGeometry(1,1,1),
       new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 })
     );
     group.add(fb);
 
-    // Loader GLTF — sem resourcePath (para .gltf embedded funcionar)
+    // Loader
     const loader = new GLTFLoader();
-    console.log('[GLTF] carregando', CONFIG.modelUrl);
-    loader.load(
-      CONFIG.modelUrl,
-      (gltf)=>{
-        // remove fallback
-        try{ group.remove(fb); fb.geometry.dispose(); fb.material.dispose(); }catch{}
+    const url = USE_KNOWN_TEST ? MODEL_TEST : CONFIG.modelUrl;
+    console.log('[GLTF] carregando', url);
 
+    loader.load(
+      url,
+      (gltf)=>{
+        try{ group.remove(fb); fb.geometry.dispose(); fb.material.dispose(); }catch{}
         const model = gltf.scene;
 
-        // Verificações úteis para “gltf nu e cru”
-        // 1) embedded? normalmente o .gltf contém "data:application/octet-stream;base64"
-        // 2) se o modelo vier sem meshes, o tamanho será ~0
+        // normaliza escala relativo ao tamanho do modelo
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
-        const diag = Math.sqrt(size.x*size.x + size.y*size.y + size.z*size.z);
-        if (!diag || diag === 0) {
-          showOverlay('⚠️ O .gltf foi carregado, mas parece não conter geometria (meshes). Verifique o export.');
-        }
-
-        const scale = (CONFIG.initialScale * 1.6) / (diag || 1);
+        const diag = Math.hypot(size.x, size.y, size.z) || 1;
+        const scale = (CONFIG.initialScale * 1.6) / diag;
         model.scale.setScalar(scale);
         model.rotation.set(0, Math.PI*0.1, 0);
 
         group.add(model);
         showOverlay('');
-        console.log('[GLTF] OK (embedded)');
+        console.log('[GLTF] OK');
       },
       (xhr)=>{
         const pct = xhr.total ? Math.round((xhr.loaded/xhr.total)*100) : null;
-        if(pct!==null) showOverlay(`carregando logo 3D… ${pct}%`);
+        if(pct!==null) showOverlay(`carregando modelo… ${pct}%`);
       },
       (err)=>{
         console.error('[GLTF] erro', err);
-        showOverlay('⚠️ Falha ao carregar o .gltf.<br>Se ele NÃO for “embedded”, vai precisar dos arquivos externos (.bin/texturas).');
-        // mantém o cubo pra cena não ficar vazia
+        showOverlay('⚠️ Falha ao carregar o modelo. Abra DevTools → Network e veja se há 404.');
       }
     );
 
@@ -187,7 +187,7 @@
       if(!isDown){
         group.rotation.y += vy; group.rotation.x += vx;
         vy *= 0.94; vx *= 0.94;
-        if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006) { group.rotation.y += 0.003; }
+        if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006) group.rotation.y += 0.003;
       }
       renderer.render(scene, camera);
       requestAnimationFrame(tick);
@@ -196,7 +196,7 @@
 
     // Botão
     document.getElementById('ctaJoin').addEventListener('click', ()=>{
-      window.open(CONFIG.ctaUrl, '_blank');
+      window.open('https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA', '_blank');
     });
   </script>
 </body>
