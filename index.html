@@ -6,28 +6,24 @@
   <title>CARVA — Lista de Espera</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --bg:#ffffff; --fg:#111111; }
+    :root{ --fg:#111111; }
     *{ box-sizing:border-box; margin:0; padding:0 }
     html,body{ height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); overflow-x:hidden; }
 
-    /* Fundo fica ATRÁS do conteúdo (desktop + mobile) */
-    body{ background:transparent; }
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      background: url('./backgroundpc.png') center/cover no-repeat;
-      z-index:-1;            /* atrás de tudo */
-      pointer-events:none;   /* não bloqueia cliques */
+    /* ===== Fundo direto no body (desktop) ===== */
+    body{
+      /* Se o arquivo se chama backgroundmobile.png, troque abaixo */
+      background: #ffffff url('./backgroundpc.png') center/cover no-repeat fixed;
     }
+    /* ===== Troca o fundo no mobile ===== */
     @media (max-width:768px){
-      body::before{
-        /* use o nome exato do arquivo que você subiu (está como backgroundmoblie.png) */
-        background: url('./backgroundmoblie.png') center/cover no-repeat;
+      body{
+        background-image: url('./backgroundmoblie.png'); /* mantenha o nome exato do arquivo */
+        background-attachment: scroll; /* mobile costuma ignorar fixed */
       }
     }
 
-    /* Conteúdo principal */
+    /* Conteúdo principal (fica naturalmente acima do background do body) */
     .wrap{
       min-height:100vh;
       display:flex;
@@ -36,8 +32,6 @@
       justify-content:center;
       gap:18px;
       text-align:center;
-      position:relative;
-      z-index:1;             /* acima do fundo */
       padding:24px 16px 40px;
     }
 
@@ -73,24 +67,23 @@
   </div>
 
   <script type="module">
-    /* Imports por URL (ESM) — funcionam direto no navegador */
+    // Imports via URL (funciona em qualquer host)
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
-    /* ===================== CONFIG EDITÁVEL ===================== */
+    // ===== CONFIG EDITÁVEL =====
     const CONFIG = {
-      modelUrl: './logo3d.gltf',               // seu .gltf
-      resourcePath: './',                      // onde estão .bin e /textures (mesmo nível do .gltf)
-      initialScale: 0.9,                       // tamanho da logo
-      rotateOnIdle: true,                      // gira de leve quando parado
+      modelUrl: './logo3d.gltf',   // seu .gltf
+      resourcePath: './',          // onde estão .bin e /textures (mesmo nível do .gltf)
+      initialScale: 0.9,           // tamanho da logo
+      rotateOnIdle: true,          // gira de leve quando parado
       ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
     };
 
-    /* ===== Cena básica ===== */
+    // ===== Cena =====
     const wrap = document.getElementById('logo3d');
     const scene = new THREE.Scene();
-    scene.background = null; // transparente, mostra o fundo do body::before
-
+    scene.background = null;             // transparente (mostra o background do body)
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
 
@@ -98,16 +91,14 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     wrap.appendChild(renderer.domElement);
 
-    // Luzes
     const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4);
     const fill = new THREE.AmbientLight(0xffffff, .35);
     scene.add(key, fill);
 
-    // Grupo para rotacionar com arraste
     const group = new THREE.Group();
     scene.add(group);
 
-    /* ===== Overlay de diagnóstico (exibe erros/progresso) ===== */
+    // ===== Overlay de diagnóstico
     function showOverlay(msg){
       let el = document.getElementById('debugMsg');
       if(!el){
@@ -120,15 +111,15 @@
       el.style.display = msg ? 'block' : 'none';
     }
 
-    /* ===== Fallback imediato: cubo (pra validar que a cena aparece) ===== */
+    // ===== Fallback imediato (cubo) — pra garantir que algo apareça
     const fbGeo = new THREE.BoxGeometry(1,1,1);
     const fbMat  = new THREE.MeshStandardMaterial({ color:0x111111, metalness:.2, roughness:.5 });
     const fbCube = new THREE.Mesh(fbGeo, fbMat);
     group.add(fbCube);
 
-    /* ===== Loader GLTF configurado para assets externos ===== */
+    // ===== Loader GLTF
     const loader = new GLTFLoader();
-    loader.setResourcePath(CONFIG.resourcePath || './'); // busca .bin e /textures aqui
+    loader.setResourcePath(CONFIG.resourcePath || './'); // procura .bin e /textures aqui
 
     console.log('[GLTF] carregando', CONFIG.modelUrl);
     loader.load(
@@ -149,7 +140,6 @@
         model.scale.setScalar(scale);
         model.rotation.set(0, Math.PI*0.1, 0);
 
-        // pequeno ajuste de material (se existir)
         model.traverse(o=>{
           if(o.isMesh && o.material && 'envMapIntensity' in o.material){
             o.material.envMapIntensity = 1.0;
@@ -167,11 +157,11 @@
       (err)=>{
         console.error('[GLTF] erro', err);
         showOverlay('⚠️ Não consegui carregar a logo 3D (.gltf).<br>Veja em Network se faltam <b>logo3d.bin</b> e/ou <b>textures/…</b>.');
-        // mantém o cubo pra você ver a cena funcionando
+        // mantém o cubo pra cena não ficar vazia
       }
     );
 
-    /* ===== Responsivo ===== */
+    // ===== Responsivo
     function resize(){
       const w = wrap.clientWidth, h = wrap.clientHeight;
       renderer.setSize(w, h, false);
@@ -180,7 +170,7 @@
     resize();
     addEventListener('resize', resize);
 
-    /* ===== Arraste (desktop e mobile) com inércia ===== */
+    // ===== Arraste com inércia
     let isDown=false, lastX=0,lastY=0, vx=0, vy=0;
     const onDown=(x,y)=>{ isDown=true; lastX=x; lastY=y; };
     const onMove=(x,y)=>{
@@ -201,13 +191,13 @@
     renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX,t.clientY); }, {passive:true});
     renderer.domElement.addEventListener('touchend', onUp);
 
-    /* ===== Loop ===== */
+    // ===== Loop
     const clock = new THREE.Clock();
     function tick(){
       const dt = Math.min(clock.getDelta(), 0.032);
       if(!isDown){
         group.rotation.y += vy; group.rotation.x += vx;
-        vy *= 0.94; vx *= 0.94; // damping
+        vy *= 0.94; vx *= 0.94;
         if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006) { group.rotation.y += 0.003; }
       }
       renderer.render(scene, camera);
@@ -215,7 +205,7 @@
     }
     tick();
 
-    /* ===== Botão ===== */
+    // ===== Botão
     document.getElementById('ctaJoin').addEventListener('click', ()=>{
       window.open(CONFIG.ctaUrl, '_blank');
     });
