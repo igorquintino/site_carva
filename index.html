@@ -3,161 +3,135 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Logo 3D Parallax</title>
+  <title>CARVA — Lista de Espera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
+    :root{
+      --bg:#fff;
+      --fg:#111;
+    }
+    *{box-sizing:border-box; margin:0; padding:0}
+    html,body{height:100%; font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg); background:var(--bg); overflow-x:hidden;}
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:url('./backgroundpc.png') center/cover no-repeat;
+      z-index:0; /* estava -1: ficava atrás do background do body */
     }
 
-    /* ===== Fundo padrão: MOBILE ===== */
-    body {
-      background-position: center;
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      background-image: url("img/bg-mobile.jpg");
-    }
-
-    /* ===== Desktop / telas maiores ===== */
-    @media (min-width: 768px) {
-      body {
-        background-image: url("./backgroundpc.png");
+    @media (max-width:768px){
+      body::before{
+        background:url('./backgroundmoblie.png') center/cover no-repeat;
       }
     }
-
-    /* Canvas do three.js ocupa toda a tela e é transparente */
-    canvas.webgl {
-      position: fixed;
-      inset: 0;
-      display: block;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none; /* permite o parallax via JS */
     }
 
-    #loading {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: #ddd;
-      font: 500 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      letter-spacing: .4px;
-      pointer-events: none;
-      background: rgba(0, 0, 0, 0.4);
-    }
-    #loading.hidden { opacity: 0; transition: opacity .4s ease; }
+    .wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; position:relative; z-index:1;}
+
+    .logo3d{ width:100%; height:40vh; display:flex; align-items:center; justify-content:center; }
+
+    .cta-text{ font-size:clamp(14px,2.2vw,18px); line-height:1.5; max-width:62ch; margin:20px auto; }
+
+    .cta-btn{ cursor:pointer; padding:.9em 1.2em; border:none; border-radius:14px; background:#111; color:#fff; font-weight:800; letter-spacing:.02em; text-transform:lowercase; box-shadow:0 10px 20px rgba(0,0,0,.08); transition:transform .2s, box-shadow .2s; }
+    .cta-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.15); }
+    .cta-btn:active{ transform:translateY(0); }
+
   </style>
 </head>
 <body>
-  <div id="loading">Carregando logo 3D…</div>
+  <div class="wrap">
+    <div class="logo3d" id="logo3d"></div>
+    <p class="cta-text">O acesso ao inesperado começa aqui. Entra pra lista e receba o convite pro próximo drop</p>
+    <button class="cta-btn" id="ctaJoin">entrar na Lista</button>
+  </div>
 
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
-    const MODEL_URL = './logo3d.gltf'; // caminho do seu arquivo .gltf
+    const CONFIG = {
+      modelUrl: './logo3d.gltf',
+      initialScale: 0.9,
+      rotateOnIdle: true,
+      ctaUrl: 'https://wa.me/55SEUNUMERO?text=Quero%20entrar%20na%20lista%20VIP%20da%20CARVA'
+    };
+
+    const wrap = document.getElementById('logo3d');
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 3);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0.2, 3.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, canvas: createCanvas() });
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearAlpha(0);
+    wrap.appendChild(renderer.domElement);
 
-    function createCanvas() {
-      const c = document.createElement('canvas');
-      c.className = 'webgl';
-      document.body.appendChild(c);
-      return c;
-    }
+    const light1 = new THREE.DirectionalLight(0xffffff,2.2); light1.position.set(2,3,4);
+    const light2 = new THREE.AmbientLight(0xffffff,.35);
+    scene.add(light1, light2);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambient);
-    const directional = new THREE.DirectionalLight(0xffffff, 1);
-    directional.position.set(2, 3, 4);
-    scene.add(directional);
-
-    const logoGroup = new THREE.Group();
-    scene.add(logoGroup);
+    const group = new THREE.Group();
+    scene.add(group);
 
     const loader = new GLTFLoader();
-    loader.load(
-      MODEL_URL,
-      (gltf) => {
-        const model = gltf.scene || gltf.scenes[0];
-        logoGroup.add(model);
-        normalizeAndCenter(model, 1.3);
-        logoGroup.rotation.set(0.05, -0.15, 0);
-        hideLoading();
-        animate();
-      },
-      undefined,
-      (error) => {
-        hideLoading();
-        console.error('Erro ao carregar o modelo:', error);
-        alert('Erro ao carregar o modelo. Verifique o caminho do arquivo.');
-      }
-    );
-
-    function hideLoading() {
-      const el = document.getElementById('loading');
-      if (el) el.classList.add('hidden');
-      setTimeout(() => el?.remove(), 500);
-    }
-
-    function normalizeAndCenter(obj, targetSize = 1) {
-      const box = new THREE.Box3().setFromObject(obj);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      obj.position.sub(center);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = targetSize / maxDim;
-      obj.scale.setScalar(scale);
-    }
-
-    const targetRot = new THREE.Vector2(0, 0);
-    const currentRot = new THREE.Vector2(0, 0);
-    let hasPointer = false;
-
-    window.addEventListener('pointermove', (e) => {
-      hasPointer = true;
-      const nx = (e.clientX / window.innerWidth) * 2 - 1;
-      const ny = (e.clientY / window.innerHeight) * 2 - 1;
-      targetRot.y = nx * 0.5;
-      targetRot.x = -ny * 0.4;
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-      if (!e.touches || !e.touches[0]) return;
-      const t = e.touches[0];
-      const nx = (t.clientX / window.innerWidth) * 2 - 1;
-      const ny = (t.clientY / window.innerHeight) * 2 - 1;
-      targetRot.y = nx * 0.5;
-      targetRot.x = -ny * 0.4;
-    }, { passive: true });
-
-    function animate(now = 0) {
-      requestAnimationFrame(animate);
-      const lerp = 0.08;
-      currentRot.lerp(targetRot, lerp);
-      logoGroup.rotation.x = currentRot.x;
-      logoGroup.rotation.y = currentRot.y;
-      const t = now * 0.001;
-      logoGroup.position.y = Math.sin(t * 0.7) * 0.02;
-      renderer.render(scene, camera);
-    }
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    // Se seu .gltf referencia .bin/textures, garanta que estão no mesmo diretório
+    loader.setResourcePath('./'); // ajuda o loader a encontrar .bin e /textures
+    loader.load(CONFIG.modelUrl, gltf=>{
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3()).length();
+      const scale = (CONFIG.initialScale*1.6)/(size||1);
+      model.scale.setScalar(scale);
+      group.add(model);
+    }, undefined, err=>{
+      console.error('Erro ao carregar modelo:', err);
+      // fallback visual para ver se a cena está ok
+      const geo = new THREE.BoxGeometry(1,1,1);
+      const mat = new THREE.MeshStandardMaterial({color:0x111111, metalness:.2, roughness:.5});
+      group.add(new THREE.Mesh(geo,mat));
     });
+      const size = box.getSize(new THREE.Vector3()).length();
+      const scale = (CONFIG.initialScale*1.6)/(size||1);
+      model.scale.setScalar(scale);
+      group.add(model);
+    }, undefined, err=>{
+      console.error('Erro ao carregar modelo:', err);
+    });
+
+    function resize(){
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      renderer.setSize(w,h,false);
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    addEventListener('resize', resize);
+
+    let isDown=false, lastX=0,lastY=0,vx=0,vy=0;
+    const onDown=(x,y)=>{isDown=true;lastX=x;lastY=y;};
+    const onMove=(x,y)=>{if(!isDown)return;const dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;const k=0.005;vy=-dx*k;vx=-dy*k;group.rotation.y+=vy;group.rotation.x+=vx;group.rotation.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,group.rotation.x));};
+    const onUp=()=>{isDown=false;};
+
+    renderer.domElement.addEventListener('mousedown',e=>onDown(e.clientX,e.clientY));
+    addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
+    addEventListener('mouseup',onUp);
+
+    renderer.domElement.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)onDown(t.clientX,t.clientY);},{passive:true});
+    renderer.domElement.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)onMove(t.clientX,t.clientY);},{passive:true});
+    renderer.domElement.addEventListener('touchend',onUp);
+
+    const clock=new THREE.Clock();
+    function tick(){
+      const dt=Math.min(clock.getDelta(),0.032);
+      if(!isDown){group.rotation.y+=vy;group.rotation.x+=vx;vy*=0.94;vx*=0.94;if(CONFIG.rotateOnIdle&&(Math.abs(vx)+Math.abs(vy)<0.0006)){group.rotation.y+=0.003;}}
+      renderer.render(scene,camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    const ctaBtn=document.getElementById('ctaJoin');
+    ctaBtn.addEventListener('click',()=>window.open(CONFIG.ctaUrl,'_blank'));
   </script>
 </body>
 </html>
