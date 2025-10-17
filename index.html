@@ -36,14 +36,18 @@
       background-repeat:no-repeat;
       z-index:0;
       pointer-events:none;
-      opacity:1;               /* ajuste se quiser ~0.9 para suavizar */
-      transform:translateZ(0); /* evita artefatos em alguns mobiles */
+      opacity:1;
+      transform:translateZ(0);
     }
-    /* Mobile: troca a imagem */
+    /* Mobile: sem corte (contain) + mais altura */
     @media (max-width: 640px){
-      .logo3d-wrap{ height:56vh; min-height:300px }
+      .logo3d-wrap{ height:64vh; min-height:340px }
       .logo3d-wrap::before{
         background-image:url("backgroundmoblie.png");  /* <- MOBILE */
+        background-size:contain;       /* não corta */
+        background-repeat:no-repeat;
+        background-position:center top;/* ajusta o foco; mude para center se preferir */
+        background-color:#0b0b0b;      /* “preenche” as bordas laterais/embaixo */
       }
     }
 
@@ -88,7 +92,7 @@
       resourcePath: './',
       basePath: null,
       crossOrigin: 'anonymous',
-      initialScale: 1.2,
+      initialScale: 1.0,   // ↓ menor que 1.2
       rotateOnIdle: true,
     };
 
@@ -105,7 +109,7 @@
     }
 
     const scene = new THREE.Scene();
-    scene.background = null; // IMPORTANTE: mantém o fundo transparente pro background aparecer
+    scene.background = null; // mantém o fundo transparente pro background aparecer
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
@@ -137,11 +141,19 @@
         CONFIG.modelUrl,
         (gltf)=>{
           const model = gltf.scene;
+
+          // ===== Ajuste de escala (logo menor) =====
           const box = new THREE.Box3().setFromObject(model);
           const size = box.getSize(new THREE.Vector3()).length();
-          const scale = (CONFIG.initialScale * 1.6) / (size || 1);
+          const scale = (CONFIG.initialScale * 1.4) / (size || 1); // ↓ de 1.6 para 1.4
           model.scale.setScalar(scale);
-          model.traverse((o)=>{ if(o.isMesh){ o.castShadow = o.receiveShadow = true; if(o.material) o.material.envMapIntensity = 1.0; }});
+
+          model.traverse((o)=>{
+            if(o.isMesh){
+              o.castShadow = o.receiveShadow = true;
+              if(o.material) o.material.envMapIntensity = 1.0;
+            }
+          });
           model.rotation.set(0, Math.PI*0.1, 0);
           group.add(model);
           showMsg('');
@@ -171,16 +183,24 @@
     let isDown = false, lastX = 0, lastY = 0, vx = 0, vy = 0;
     const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
     const onMove = (x,y)=>{
-      if(!isDown) return; const dx = x - lastX, dy = y - lastY; lastX = x; lastY = y;
-      const k = 0.005; vy = -dx * k; vx = -dy * k; group.rotation.y += vy; group.rotation.x += vx; group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
+      if(!isDown) return;
+      const dx = x - lastX, dy = y - lastY; lastX = x; lastY = y;
+      const k = 0.005;
+      vy = -dx * k; vx = -dy * k;
+      group.rotation.y += vy; group.rotation.x += vx;
+      group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
     };
     const onUp = ()=>{ isDown = false; };
     renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX, e.clientY));
     addEventListener('mousemove', e=> onMove(e.clientX, e.clientY));
     addEventListener('mouseup', onUp);
 
-    renderer.domElement.addEventListener('touchstart', e=>{ const t=e.touches[0]; if(t) onDown(t.clientX, t.clientY); }, {passive:true});
-    renderer.domElement.addEventListener('touchmove',  e=>{ const t=e.touches[0]; if(t) onMove(t.clientX, t.clientY); }, {passive:true});
+    renderer.domElement.addEventListener('touchstart', e=>{
+      const t=e.touches[0]; if(t) onDown(t.clientX, t.clientY);
+    }, {passive:true});
+    renderer.domElement.addEventListener('touchmove',  e=>{
+      const t=e.touches[0]; if(t) onMove(t.clientX, t.clientY);
+    }, {passive:true});
     renderer.domElement.addEventListener('touchend', onUp);
 
     const clock = new THREE.Clock();
@@ -191,7 +211,8 @@
         vy *= 0.94; vx *= 0.94;
         if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; }
       }
-      renderer.render(scene, camera); requestAnimationFrame(tick);
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
     }
     tick();
   </script>
