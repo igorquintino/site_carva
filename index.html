@@ -5,84 +5,138 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CARVA — 3D Logo (.gltf com assets externos)</title>
   <style>
-    :root{ --bg:#0b0b0b; --fg:#eaeaea; }
+    :root{ --bg:#ffffff; --fg:#0b0b0b; }
     html,body{height:100%}
     body{
       margin:0;
-      background:var(--bg);
+      background:#fff;
       color:var(--fg);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    /* ====== Área do 3D com background por trás ====== */
-/* Base */
-/* seção cheia */
-.logo3d-wrap {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  overflow: hidden;
-  background: none;
-}
+    /* ====== Área do 3D ====== */
+    .logo3d-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      overflow: hidden;
+      background:#fff;
+      isolation: isolate;
+    }
 
-.logo3d-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("backgroundpc.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  z-index: 0;
-  opacity: 1;
-  pointer-events: none;
-}
+    .logo3d-wrap::before{ content:none !important; }
 
-/* MOBILE */
-@media (max-width: 640px){
-  html, body { margin: 0; background: #fff; }
-
-  .logo3d-wrap {
-    min-height: 100svh;  /* usa toda a altura visível */
-    background: #fff;
-  }
-
-  .logo3d-wrap::before {
-    background-image: url("backgroundmobile.png");
-    background-size: contain;         /* mostra a imagem toda */
-    background-repeat: no-repeat;
-    background-position: top center;  /* alinha pelo topo */
-    background-color: #fff;           /* completa o fundo */
-  }
-}
-
-body{
-  margin:0;
-  background:#fff; /* evita faixas pretas fora do hero */
-}
-
-
-    /* Canvas por cima do background */
-    canvas{
+    /* Canvas por cima (transparente) */
+    .logo3d-wrap canvas{
+      position:absolute;
+      inset:0;
+      z-index:1;
       display:block;
       width:100%; height:100%;
-      position:relative; z-index:1;
+      background:transparent !important;
+    }
+
+    /* MOBILE (mantém branco) */
+    @media (max-width: 640px){
+      html, body { margin:0; background:#fff; }
+      .logo3d-wrap{
+        min-height: 100px;
+        background:#fff;
+      }
+      .logo3d-wrap::before{ content:none !important; }
     }
 
     .hint{
       position:absolute; bottom:10px; left:50%;
-      transform:translateX(-50%); font-size:12px; opacity:.75; z-index:2;
+      text-align:center;
+      transform:translateX(-50%);
+      color:#404040; font-size:12px; opacity:.75; z-index:2;
+      font-family:'Lucida Sans','Lucida Sans Regular','Lucida Grande','Lucida Sans Unicode',Geneva,Verdana,sans-serif;
     }
     .msg{
       position:absolute; top:10px; left:50%;
       transform:translateX(-50%); font-size:12px;
       background:#141414; border:1px solid #2a2a2a;
       padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%;
-      text-align:center; z-index:2;
+      text-align:center; z-index:2; color:#fff;
+    }
+
+    .iconedireita{
+      position: fixed; top:0; right:0; z-index:3; pointer-events:none;
+    }
+    .iconedireita img{ display:block; width:50vh; height:auto; margin:0; padding:0; }
+
+    .iconeesquerda{
+      position: fixed; bottom:0; left:0; z-index:3; pointer-events:none;
+    }
+    .iconeesquerda img{ display:block; width:50vh; height:auto; margin:0; padding-bottom:50px; }
+
+    .iconeesquerdamobile img{ display:none }
+
+    /* ===== MOBILE (<=640px) ===== */
+    @media (max-width:640px){
+      :root{ --icon-h: 250px; }
+
+      .iconeesquerdamobile{
+        position: fixed; top:0; left:0; z-index:10;
+        margin:0; padding:0; pointer-events:none;
+      }
+      .iconeesquerdamobile img{
+        display:block; height:var(--icon-h); width:auto; margin:0; padding:0;
+      }
+
+      .logo3d-wrap{
+        position:relative;
+        padding-top: calc(var(--icon-h) + 0px);
+        height: calc(100dvh - var(--icon-h) - 8px);
+        background:#fff; margin:0;
+      }
+
+      .logo3d-wrap canvas{
+        position:absolute; top:0; left:50%;
+        transform: translateX(-50%) scale(1);
+        transform-origin: top center;
+        z-index:1;
+      }
+
+      .iconedireita, .iconeesquerda { display:none; }
+    }
+
+    /* ====== (NOVO) Botão entre a logo e o texto ====== */
+    .botao{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:68px;          /* fica acima do texto .hint */
+      z-index:2;            /* acima do canvas (z=1) */
+    }
+    .botao button{
+      background:transparent;
+      border:2px solid #000;
+      color:#000;
+      border-radius:0;      /* quadrado */
+      padding:10px 16px;
+      font-size:14px;
+      letter-spacing:.5px;
+      cursor:pointer;
+      transition:background .2s, color .2s;
+    }
+    .botao button:hover{
+      background:#000;
+      color:#fff;
+    }
+
+    @media (max-width:640px){
+      .botao{ bottom:74px; }           /* ajusta distância no mobile */
+      .botao button{
+        padding:10px 14px;
+        font-size:12px;
+        border-width:2px;
+      }
+      .hint{ font-size:12px; bottom:14px; }
     }
   </style>
 
-  <!-- Import Map: resolve "three" e addons no navegador -->
   <script type="importmap">
     {"imports":{
       "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -91,19 +145,28 @@ body{
   </script>
 </head>
 <body>
+  <div class="iconedireita" id="iconedireita"><img src="testtedeiconedireita.png" alt=""></div>
+  <div class="iconeesquerda" id="iconeesquerda"><img src="testedeicone.png" alt=""></div>
+  <div class="iconeesquerdamobile" id="iconeesquerdamobile"><img src="testedeicone.png" alt=""></div>
+
   <div class="logo3d-wrap" id="logo3d">
     <div class="msg" id="msg" style="display:none"></div>
-    <div class="hint"></div>
+
+    <!-- (NOVO) Botão centralizado entre a logo 3D e o texto -->
+    <div class="botao" id="botao">
+      <button>ENTRAR NA LISTA DE ESPERA</button>
+    </div>
+
+    <div class="hint">Nada que nos empreda sobrevive</div>
   </div>
 
   <script type="module">
-    /* ===================== CONFIG (.GLTF) ===================== */
     const CONFIG = {
       modelUrl: './logo3dpreta.gltf',
       resourcePath: './',
       basePath: null,
       crossOrigin: 'anonymous',
-      initialScale: 1.0,   // ↓ menor que 1.2
+      initialScale: 1.0,
       rotateOnIdle: true,
     };
 
@@ -120,12 +183,13 @@ body{
     }
 
     const scene = new THREE.Scene();
-    scene.background = null; // mantém o fundo transparente pro background aparecer
+    scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0.2, 3.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true }); // alpha:true para fundo transparente
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     wrap.appendChild(renderer.domElement);
 
@@ -152,11 +216,9 @@ body{
         CONFIG.modelUrl,
         (gltf)=>{
           const model = gltf.scene;
-
-          // ===== Ajuste de escala (logo menor) =====
           const box = new THREE.Box3().setFromObject(model);
           const size = box.getSize(new THREE.Vector3()).length();
-          const scale = (CONFIG.initialScale * 1) / (size || 1); // ↓ de 1.6 para 1.4
+          const scale = (CONFIG.initialScale * 1) / (size || 1);
           model.scale.setScalar(scale);
 
           model.traverse((o)=>{
