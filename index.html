@@ -135,6 +135,37 @@
       }
       .hint{ font-size:12px; bottom:14px; }
     }
+
+    /* ===== DESKTOP (>=641px) ===== */
+@media (min-width: 641px){
+
+  /* 1) Logo 3D: maior e um pouco acima do meio */
+  .logo3d-wrap{
+    min-height:100vh;
+  }
+  .logo3d-wrap canvas{
+    position:absolute;
+    left:50%;
+    top:38%;                          /* sobe a logo (meio seria 50%) */
+    transform:translate(-50%, -50%) scale(1.35); /* aumenta a logo */
+    transform-origin:center center;
+  }
+
+  /* 2) Botão: centralizado (já está), mas um pouco mais pra cima */
+  .botao{
+    left:50%;
+    transform:translateX(-50%);
+    bottom: 22vh;                     /* sobe o botão; ajuste se quiser */
+    z-index:2;
+  }
+
+  /* 3) Frase: maior e um pouco mais alta */
+  .hint{
+    font-size:16px;                   /* maior (era 12px) */
+    bottom: 8vh;                      /* sobe um pouco a frase */
+  }
+}
+
   </style>
 
   <script type="importmap">
