@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CARVA</title>
+  <link rel="preload" as="fetch" href="./logo3dpreta.gltf" crossorigin>
   <style>
     :root{ --bg:#ffffff; --fg:#0b0b0b; }
     html,body{height:100%}
@@ -14,7 +15,6 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    /* ====== Área do 3D ====== */
     .logo3d-wrap {
       position: relative;
       width: 100%;
@@ -23,10 +23,8 @@
       background:#fff;
       isolation: isolate;
     }
-
     .logo3d-wrap::before{ content:none !important; }
 
-    /* Canvas por cima (transparente) */
     .logo3d-wrap canvas{
       position:absolute;
       inset:0;
@@ -36,7 +34,16 @@
       background:transparent !important;
     }
 
-    /* MOBILE (mantém branco) */
+    /* Fallback estático enquanto carrega o 3D */
+    #logo-fallback{
+      position:absolute; inset:0;
+      margin:auto; max-width:62vw; max-height:42vh;
+      object-fit:contain;
+      z-index:0;
+      opacity:1; transition:opacity .25s ease;
+    }
+    #logo-fallback.hidden{ opacity:0; pointer-events:none; }
+
     @media (max-width: 640px){
       html, body { margin:0; background:#fff; }
       .logo3d-wrap{
@@ -59,21 +66,17 @@
       background:#141414; border:1px solid #2a2a2a;
       padding:.5em .8em; border-radius:10px; opacity:.9; max-width:92%;
       text-align:center; z-index:2; color:#fff;
+      display:none;
     }
 
-    .iconedireita{
-      position: fixed; top:0; right:0; z-index:3; pointer-events:none;
-    }
+    .iconedireita{ position: fixed; top:0; right:0; z-index:3; pointer-events:none; }
     .iconedireita img{ display:block; width:50vh; height:auto; margin:0; padding:0; }
 
-    .iconeesquerda{
-      position: fixed; bottom:0; left:0; z-index:3; pointer-events:none;
-    }
+    .iconeesquerda{ position: fixed; bottom:0; left:0; z-index:3; pointer-events:none; }
     .iconeesquerda img{ display:block; width:50vh; height:auto; margin:0; padding-bottom:50px; }
 
     .iconeesquerdamobile img{ display:none }
 
-    /* ===== MOBILE (<=640px) ===== */
     @media (max-width:640px){
       :root{ --icon-h: 250px; }
 
@@ -94,7 +97,7 @@
 
       .logo3d-wrap canvas{
         position:absolute; top:0; left:50%;
-        transform: translateX(-50%) scale(1);
+        transform: translateX(-50%) scale(0.9);
         transform-origin: top center;
         z-index:1;
       }
@@ -102,88 +105,62 @@
       .iconedireita, .iconeesquerda { display:none; }
     }
 
-    /* ====== (NOVO) Botão entre a logo e o texto ====== */
+    /* Botão */
     .botao{
       position:absolute;
       left:50%;
       transform:translateX(-50%);
-      bottom:68px;          /* fica acima do texto .hint */
-      z-index:2;            /* acima do canvas (z=1) */
+      bottom:68px;
+      z-index:2;
     }
-/* Botão quadrado branco com borda preta */
-.botao a.botao-whatsapp{
-  display:inline-block;
-  background:#fff;
-  border:3px solid #000;   /* borda preta mais grossa */
-  color:#000;
-  border-radius:0;         /* quadrado */
-  padding:12px 18px;
-  font-size:14px;
-  font-weight:600;
-  letter-spacing:.5px;
-  text-decoration:none;    /* remove sublinhado */
-  white-space:nowrap;      /* evita quebra de linha */
-  transition:background .2s, color .2s, transform .1s;
-  -webkit-tap-highlight-color: transparent; /* melhora toque no mobile */
-}
-
-.botao a.botao-whatsapp:hover{
-  background:#000;
-  color:#fff;
-}
-
-.botao a.botao-whatsapp:visited{
-  color:#000;              /* mantém preto mesmo após clicar */
-}
-
-@media (max-width:640px){
-  .botao a.botao-whatsapp{
-    padding:10px 16px;
-    font-size:12px;
-    border-width:3px;
-  }
-}
+    .botao a.botao-whatsapp{
+      display:inline-block;
+      background:#fff;
+      border:3px solid #000;
+      color:#000;
+      border-radius:0;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:600;
+      letter-spacing:.5px;
+      text-decoration:none;
+      white-space:nowrap;
+      transition:background .2s, color .2s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .botao a.botao-whatsapp:hover{ background:#000; color:#fff; }
+    .botao a.botao-whatsapp:visited{ color:#000; }
 
     @media (max-width:640px){
-      .botao{ bottom:74px; }           /* ajusta distância no mobile */
-      .botao button{
-        padding:10px 14px;
+      .botao{ bottom:74px; }
+      .botao a.botao-whatsapp{
+        padding:10px 16px;
         font-size:12px;
-        border-width:2px;
+        border-width:3px;
       }
       .hint{ font-size:12px; bottom:14px; }
     }
 
-    /* ===== DESKTOP (>=641px) ===== */
-@media (min-width: 641px){
-
-  /* 1) Logo 3D: maior e um pouco acima do meio */
-  .logo3d-wrap{
-    min-height:100vh;
-  }
-  .logo3d-wrap canvas{
-    position:absolute;
-    left:50%;
-    top:38%;                          /* sobe a logo (meio seria 50%) */
-    transform:translate(-50%, -50%) scale(1.35); /* aumenta a logo */
-    transform-origin:center center;
-  }
-
-  /* 2) Botão: centralizado (já está), mas um pouco mais pra cima */
-  .botao{
-    left:50%;
-    transform:translateX(-50%);
-    bottom: 22vh;                     /* sobe o botão; ajuste se quiser */
-    z-index:2;
-  }
-
-  /* 3) Frase: maior e um pouco mais alta */
-  .hint{
-    font-size:16px;                   /* maior (era 12px) */
-    bottom: 8vh;                      /* sobe um pouco a frase */
-  }
-}
-
+    @media (min-width: 641px){
+      .logo3d-wrap{ min-height:100vh; }
+      .logo3d-wrap canvas{
+        position:absolute;
+        left:50%;
+        top:38%;
+        transform:translate(-50%, -50%) scale(1.2);
+        transform-origin:center center;
+      }
+      .botao{
+        left:50%;
+        transform:translateX(-50%);
+        bottom: 22vh;
+        z-index:2;
+      }
+      .hint{
+        font-size:16px;
+        bottom: 8vh;
+      }
+    }
   </style>
 
   <script type="importmap">
@@ -199,14 +176,15 @@
   <div class="iconeesquerdamobile" id="iconeesquerdamobile"><img src="testedeicone.png" alt=""></div>
 
   <div class="logo3d-wrap" id="logo3d">
-    <div class="msg" id="msg" style="display:none"></div>
+    <div class="msg" id="msg"></div>
 
-    <!-- (NOVO) Botão centralizado entre a logo 3D e o texto -->
-<div class="botao" id="botao">
-  <a href="https://chat.whatsapp.com/H56m4OGC63F3HJ09ila6uv?mode=wwt" target="_blank" class="botao-whatsapp">
-    ENTRAR NA COMUNIDADE CARVA
-  </a>
-</div>
+    <img id="logo-fallback" src="logo-static.webp" alt="CARVA">
+
+    <div class="botao" id="botao">
+      <a href="https://chat.whatsapp.com/H56m4OGC63F3HJ09ila6uv" target="_blank" class="botao-whatsapp">
+        ENTRAR NA COMUNIDADE CARVA
+      </a>
+    </div>
 
     <div class="hint">Nada que nos empreda sobrevive</div>
   </div>
@@ -227,11 +205,11 @@
 
     const wrap = document.getElementById('logo3d');
     const msg  = document.getElementById('msg');
+    const fallbackImg = document.getElementById('logo-fallback');
+
     function showMsg(text){ msg.innerHTML = text; msg.style.display = text ? 'block' : 'none'; }
 
-    if (location.protocol === 'file:') {
-      showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server) para evitar bloqueios ao carregar .gltf e texturas.');
-    }
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
     const scene = new THREE.Scene();
     scene.background = null;
@@ -241,14 +219,15 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5));
+    renderer.shadowMap.enabled = false;
     wrap.appendChild(renderer.domElement);
 
-    const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4);
-    const fill = new THREE.DirectionalLight(0x99ffe1, 1.2); fill.position.set(-3, 2, 1);
-    const rim = new THREE.DirectionalLight(0x66aaff, 1.1); rim.position.set(0, -2, -3);
-    const amb = new THREE.AmbientLight(0xffffff, 0.35);
-    scene.add(key, fill, rim, amb);
+    // Luz simples e leve
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+    dir.position.set(2,3,4);
+    scene.add(dir);
 
     const group = new THREE.Group();
     scene.add(group);
@@ -274,22 +253,21 @@
 
           model.traverse((o)=>{
             if(o.isMesh){
-              o.castShadow = o.receiveShadow = true;
+              o.castShadow = false;
+              o.receiveShadow = false;
               if(o.material) o.material.envMapIntensity = 1.0;
             }
           });
           model.rotation.set(0, Math.PI*0.1, 0);
           group.add(model);
+          if (fallbackImg) fallbackImg.classList.add('hidden');
           showMsg('');
         },
         undefined,
         (err)=>{
           console.error('Erro ao carregar GLTF:', err);
-          showMsg('Não consegui carregar seu <b>.gltf</b>. Verifique:<br>• <b>resourcePath</b> aponta para a pasta com <b>.bin</b> e <b>textures/</b><br>• Rode via servidor local (http://).<br>Carregando um cubo de teste...');
-          const geo = new THREE.BoxGeometry(1,1,1);
-          const mat = new THREE.MeshStandardMaterial({ color: 0x18e091, metalness:.4, roughness:.35 });
-          const cube = new THREE.Mesh(geo, mat);
-          group.add(cube);
+          showMsg('Não consegui carregar o 3D agora.');
+          // Mantém o fallback
         }
       );
     }
@@ -318,7 +296,6 @@
     renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX, e.clientY));
     addEventListener('mousemove', e=> onMove(e.clientX, e.clientY));
     addEventListener('mouseup', onUp);
-
     renderer.domElement.addEventListener('touchstart', e=>{
       const t=e.touches[0]; if(t) onDown(t.clientX, t.clientY);
     }, {passive:true});
@@ -336,9 +313,17 @@
         if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; }
       }
       renderer.render(scene, camera);
-      requestAnimationFrame(tick);
     }
-    tick();
+    renderer.setAnimationLoop(tick);
+
+    document.addEventListener('visibilitychange', ()=>{
+      if (document.hidden) renderer.setAnimationLoop(null);
+      else renderer.setAnimationLoop(tick);
+    });
+
+    if (location.protocol === 'file:') {
+      showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server).');
+    }
   </script>
 </body>
 </html>
