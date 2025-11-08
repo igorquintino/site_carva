@@ -110,21 +110,39 @@
       bottom:68px;          /* fica acima do texto .hint */
       z-index:2;            /* acima do canvas (z=1) */
     }
-    .botao button{
-      background:transparent;
-      border:2px solid #000;
-      color:#000;
-      border-radius:0;      /* quadrado */
-      padding:10px 16px;
-      font-size:14px;
-      letter-spacing:.5px;
-      cursor:pointer;
-      transition:background .2s, color .2s;
-    }
-    .botao button:hover{
-      background:#000;
-      color:#fff;
-    }
+/* Botão quadrado branco com borda preta */
+.botao a.botao-whatsapp{
+  display:inline-block;
+  background:#fff;
+  border:3px solid #000;   /* borda preta mais grossa */
+  color:#000;
+  border-radius:0;         /* quadrado */
+  padding:12px 18px;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:.5px;
+  text-decoration:none;    /* remove sublinhado */
+  white-space:nowrap;      /* evita quebra de linha */
+  transition:background .2s, color .2s, transform .1s;
+  -webkit-tap-highlight-color: transparent; /* melhora toque no mobile */
+}
+
+.botao a.botao-whatsapp:hover{
+  background:#000;
+  color:#fff;
+}
+
+.botao a.botao-whatsapp:visited{
+  color:#000;              /* mantém preto mesmo após clicar */
+}
+
+@media (max-width:640px){
+  .botao a.botao-whatsapp{
+    padding:10px 16px;
+    font-size:12px;
+    border-width:3px;
+  }
+}
 
     @media (max-width:640px){
       .botao{ bottom:74px; }           /* ajusta distância no mobile */
