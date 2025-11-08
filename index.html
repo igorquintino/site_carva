@@ -13,25 +13,30 @@
       background:#fff;
       color:var(--fg);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow:hidden;
     }
 
     .logo3d-wrap {
       position: relative;
       width: 100%;
-      min-height: 100vh;
-      overflow: hidden;
+      height: 100vh;
       background:#fff;
-      isolation: isolate;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .logo3d-wrap::before{ content:none !important; }
 
-    .logo3d-wrap canvas{
+    canvas{
       position:absolute;
-      inset:0;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%) scale(1.2);
+      width:100%;
+      height:100%;
       z-index:1;
-      display:block;
-      width:100%; height:100%;
-      background:transparent !important;
+      pointer-events:none;
     }
 
     #logo-fallback{
@@ -39,51 +44,60 @@
       top:50%;
       left:50%;
       transform:translate(-50%,-50%);
-      max-width:62vw; max-height:42vh;
-      object-fit:contain;
+      max-width:60vw;
       z-index:0;
-      opacity:1; transition:opacity .25s ease;
-    }
-    #logo-fallback.hidden{ opacity:0; pointer-events:none; }
-
-    .hint{
-      position:absolute; bottom:10px; left:50%;
-      text-align:center;
-      transform:translateX(-50%);
-      color:#404040; font-size:12px; opacity:.75; z-index:2;
     }
 
     .botao{
-      position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      top:55%;
-      z-index:2;
+      position:relative;
+      z-index:3;
+      margin-top:45vh;
     }
-    .botao a.botao-whatsapp{
+    .botao a{
       display:inline-block;
       background:#000;
-      border:3px solid #000;
       color:#fff;
-      border-radius:0;
-      padding:14px 22px;
-      font-size:14px;
-      font-weight:600;
-      letter-spacing:.5px;
+      border:3px solid #000;
       text-decoration:none;
-      transition:background .2s, color .2s, transform .1s;
-      -webkit-tap-highlight-color: transparent;
+      padding:14px 28px;
+      font-weight:600;
+      font-size:14px;
+      transition:0.3s;
     }
-    .botao a.botao-whatsapp:hover{
+    .botao a:hover{
       background:#fff;
       color:#000;
     }
 
-    @media (max-width:640px){
-      #logo-fallback{ max-width:70vw; top:45%; }
-      .botao{ top:60%; }
+    .hint{
+      position:absolute;
+      bottom:40px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:14px;
+      color:#777;
+      z-index:3;
     }
 
+    @media(max-width:640px){
+      canvas{
+        transform:translate(-50%,-50%) scale(1);
+      }
+      #logo-fallback{
+        max-width:70vw;
+      }
+      .botao{
+        margin-top:40vh;
+      }
+      .botao a{
+        padding:12px 20px;
+        font-size:12px;
+      }
+      .hint{
+        font-size:12px;
+        bottom:20px;
+      }
+    }
   </style>
 
   <script type="importmap">
@@ -97,8 +111,8 @@
   <div class="logo3d-wrap" id="logo3d">
     <img id="logo-fallback" src="logo-static.webp" alt="CARVA">
 
-    <div class="botao" id="botao">
-      <a href="https://chat.whatsapp.com/H56m4OGC63F3HJ09ila6uv" target="_blank" class="botao-whatsapp">
+    <div class="botao">
+      <a href="https://chat.whatsapp.com/H56m4OGC63F3HJ09ila6uv" target="_blank">
         ENTRAR NA COMUNIDADE CARVA
       </a>
     </div>
@@ -120,57 +134,37 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
     const wrap = document.getElementById('logo3d');
-    const fallbackImg = document.getElementById('logo-fallback');
+    const fallback = document.getElementById('logo-fallback');
+
     const scene = new THREE.Scene();
-    scene.background = null;
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(0,0,3);
 
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 3.2);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.shadowMap.enabled = false;
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
     wrap.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.1);
-    dir.position.set(2,3,4);
-    scene.add(dir);
-
-    const group = new THREE.Group();
-    scene.add(group);
+    const light = new THREE.DirectionalLight(0xffffff,1.5);
+    light.position.set(2,3,5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0xffffff,0.6));
 
     const loader = new GLTFLoader();
     const draco = new DRACOLoader();
     draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
     loader.setDRACOLoader(draco);
 
-    loader.load(
-      CONFIG.modelUrl,
-      (gltf)=>{
-        const model = gltf.scene;
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3()).length();
-        const scale = (CONFIG.initialScale * 1) / (size || 1);
-        model.scale.setScalar(scale);
-        model.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } });
-        model.rotation.set(0, Math.PI*0.1, 0);
-        group.add(model);
-        fallbackImg.classList.add('hidden');
-      },
-      undefined,
-      ()=>{}
-    );
+    let group = new THREE.Group();
+    scene.add(group);
 
-    function resize(){
-      const w = wrap.clientWidth, h = wrap.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    }
-    resize();
-    addEventListener('resize', resize);
+    loader.load(CONFIG.modelUrl, gltf=>{
+      const model = gltf.scene;
+      model.scale.set(1,1,1);
+      model.rotation.y = Math.PI * 0.1;
+      group.add(model);
+      fallback.style.display="none";
+    });
 
     let isDown=false,lastX=0,lastY=0,vx=0,vy=0;
     const onDown=(x,y)=>{isDown=true;lastX=x;lastY=y;};
@@ -180,27 +174,35 @@
       const k=0.005;
       vy=-dx*k;vx=-dy*k;
       group.rotation.y+=vy;group.rotation.x+=vx;
-      group.rotation.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,group.rotation.x));
     };
     const onUp=()=>{isDown=false;};
+
     renderer.domElement.addEventListener('mousedown',e=>onDown(e.clientX,e.clientY));
-    addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
-    addEventListener('mouseup',onUp);
+    window.addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
+    window.addEventListener('mouseup',onUp);
     renderer.domElement.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)onDown(t.clientX,t.clientY);},{passive:true});
     renderer.domElement.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)onMove(t.clientX,t.clientY);},{passive:true});
     renderer.domElement.addEventListener('touchend',onUp);
 
+    window.addEventListener('resize',()=>{
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
     const clock=new THREE.Clock();
-    function tick(){
-      const dt=Math.min(clock.getDelta(),0.032);
+    function animate(){
+      const dt=clock.getDelta();
       if(!isDown){
-        group.rotation.y+=vy;group.rotation.x+=vx;
-        vy*=0.94;vx*=0.94;
-        if(CONFIG.rotateOnIdle&&Math.abs(vx)+Math.abs(vy)<0.0006){group.rotation.y+=0.003;}
+        group.rotation.y += vy;
+        group.rotation.x += vx;
+        vy *= 0.94; vx *= 0.94;
+        if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy)<0.0006) group.rotation.y+=0.003;
       }
       renderer.render(scene,camera);
+      requestAnimationFrame(animate);
     }
-    renderer.setAnimationLoop(tick);
+    animate();
   </script>
 </body>
 </html>
