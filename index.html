@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CARVA</title>
 
-  <!-- Preload do modelo (ok manter) -->
-  <link rel="preload" as="fetch" href="./logo3dpreta.gltf" crossorigin>
+  <!-- LCP: preload da imagem principal -->
+  <link rel="preload" as="image" href="logo-static.webp">
 
   <style>
     :root{ --bg:#ffffff; --fg:#0b0b0b; }
@@ -177,14 +177,21 @@
   </script>
 </head>
 <body>
-  <div class="iconedireita" id="iconedireita"><img src="testtedeiconedireita.png" alt=""></div>
-  <div class="iconeesquerda" id="iconeesquerda"><img src="testedeicone.png" alt=""></div>
-  <div class="iconeesquerdamobile" id="iconeesquerdamobile"><img src="testedeicone.png" alt=""></div>
+  <div class="iconedireita" id="iconedireita">
+    <img src="testtedeiconedireita.png" loading="lazy" decoding="async" alt="">
+  </div>
+  <div class="iconeesquerda" id="iconeesquerda">
+    <img src="testedeicone.png" loading="lazy" decoding="async" alt="">
+  </div>
+  <div class="iconeesquerdamobile" id="iconeesquerdamobile">
+    <img src="testedeicone.png" loading="lazy" decoding="async" alt="">
+  </div>
 
   <div class="logo3d-wrap" id="logo3d">
     <div class="msg" id="msg"></div>
 
-    <img id="logo-fallback" src="logo-static.webp" alt="CARVA">
+    <!-- LCP com width/height pra ajudar o layout -->
+    <img id="logo-fallback" src="logo-static.webp" alt="CARVA" width="800" height="500">
 
     <div class="botao" id="botao">
       <a href="https://chat.whatsapp.com/H56m4OGC63F3HJ09ila6uv" target="_blank" class="botao-whatsapp">
@@ -195,7 +202,7 @@
     <div class="hint">Nada que nos empreda sobrevive</div>
   </div>
 
-  <!-- Script agora é leve no início e carrega o 3D de forma preguiçosa -->
+  <!-- Script carrega o 3D de forma preguiçosa -->
   <script type="module">
     const CONFIG = {
       modelUrl: './logo3dpreta.gltf',
@@ -226,7 +233,6 @@
       started = true;
 
       try {
-        // Imports pesados só aqui (fora do caminho crítico de carregamento)
         const [{ default: THREE }, { GLTFLoader }, { DRACOLoader }] = await Promise.all([
           import('three'),
           import('three/addons/loaders/GLTFLoader.js'),
@@ -250,7 +256,6 @@
         renderer.shadowMap.enabled = false;
         wrap.appendChild(renderer.domElement);
 
-        // Luz simples
         scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
         const dir = new THREE.DirectionalLight(0xffffff, 1.1);
         dir.position.set(2,3,4);
@@ -307,7 +312,6 @@
         resize();
         window.addEventListener('resize', resize);
 
-        // Interação arrastar + inércia
         const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
         const onMove = (x,y)=>{
           if (!isDown || !group) return;
@@ -365,7 +369,6 @@
       }
     }
 
-    // Agenda o carregamento do 3D quando a página estiver estável
     function scheduleInit3D(){
       if ('requestIdleCallback' in window){
         requestIdleCallback(()=> init3D(), { timeout: 2000 });
@@ -374,12 +377,10 @@
       }
     }
 
-    // Inicia após load (sem travar o primeiro paint)
     window.addEventListener('load', scheduleInit3D);
-
-    // Se o usuário interagir antes, prioriza o 3D
     wrap.addEventListener('pointerdown', ()=> init3D(), { once:true });
 
   </script>
 </body>
 </html>
+
