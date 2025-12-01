@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CARVA</title>
+
+  <!-- Preload do modelo (ok manter) -->
   <link rel="preload" as="fetch" href="./logo3dpreta.gltf" crossorigin>
+
   <style>
     :root{ --bg:#ffffff; --fg:#0b0b0b; }
     html,body{height:100%}
@@ -163,11 +166,14 @@
     }
   </style>
 
+  <!-- Import map continua igual -->
   <script type="importmap">
-    {"imports":{
-      "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
-    }}
+    {
+      "imports":{
+        "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
   </script>
 </head>
 <body>
@@ -189,6 +195,7 @@
     <div class="hint">Nada que nos empreda sobrevive</div>
   </div>
 
+  <!-- Script agora é leve no início e carrega o 3D de forma preguiçosa -->
   <script type="module">
     const CONFIG = {
       modelUrl: './logo3dpreta.gltf',
@@ -199,131 +206,180 @@
       rotateOnIdle: true,
     };
 
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-
-    const wrap = document.getElementById('logo3d');
-    const msg  = document.getElementById('msg');
+    const wrap        = document.getElementById('logo3d');
+    const msg         = document.getElementById('msg');
     const fallbackImg = document.getElementById('logo-fallback');
 
-    function showMsg(text){ msg.innerHTML = text; msg.style.display = text ? 'block' : 'none'; }
+    function showMsg(text){
+      msg.innerHTML = text || '';
+      msg.style.display = text ? 'block' : 'none';
+    }
 
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-    const scene = new THREE.Scene();
-    scene.background = null;
+    let started = false;
+    let renderer, scene, camera, group, clock;
+    let vx = 0, vy = 0, isDown = false, lastX = 0, lastY = 0;
 
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 3.2);
+    async function init3D(){
+      if (started) return;
+      started = true;
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5));
-    renderer.shadowMap.enabled = false;
-    wrap.appendChild(renderer.domElement);
+      try {
+        // Imports pesados só aqui (fora do caminho crítico de carregamento)
+        const [{ default: THREE }, { GLTFLoader }, { DRACOLoader }] = await Promise.all([
+          import('three'),
+          import('three/addons/loaders/GLTFLoader.js'),
+          import('three/addons/loaders/DRACOLoader.js'),
+        ]);
 
-    // Luz simples e leve
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.1);
-    dir.position.set(2,3,4);
-    scene.add(dir);
+        scene = new THREE.Scene();
+        scene.background = null;
 
-    const group = new THREE.Group();
-    scene.add(group);
+        camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        camera.position.set(0, 0.2, 3.2);
 
-    const loader = new GLTFLoader();
-    const draco = new DRACOLoader();
-    draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-    loader.setDRACOLoader(draco);
+        renderer = new THREE.WebGLRenderer({
+          antialias:true,
+          alpha:true,
+          powerPreference: 'low-power'
+        });
+        renderer.setClearColor(0x000000, 0);
+        const pixelRatio = isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5);
+        renderer.setPixelRatio(pixelRatio);
+        renderer.shadowMap.enabled = false;
+        wrap.appendChild(renderer.domElement);
 
-    if (CONFIG.basePath) loader.setPath(CONFIG.basePath);
-    if (CONFIG.resourcePath) loader.setResourcePath(CONFIG.resourcePath);
-    if (CONFIG.crossOrigin) loader.crossOrigin = CONFIG.crossOrigin;
+        // Luz simples
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
+        const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+        dir.position.set(2,3,4);
+        scene.add(dir);
 
-    function loadModel(){
-      loader.load(
-        CONFIG.modelUrl,
-        (gltf)=>{
-          const model = gltf.scene;
-          const box = new THREE.Box3().setFromObject(model);
-          const size = box.getSize(new THREE.Vector3()).length();
-          const scale = (CONFIG.initialScale * 1) / (size || 1);
-          model.scale.setScalar(scale);
+        group = new THREE.Group();
+        scene.add(group);
 
-          model.traverse((o)=>{
-            if(o.isMesh){
-              o.castShadow = false;
-              o.receiveShadow = false;
-              if(o.material) o.material.envMapIntensity = 1.0;
-            }
-          });
-          model.rotation.set(0, Math.PI*0.1, 0);
-          group.add(model);
-          if (fallbackImg) fallbackImg.classList.add('hidden');
-          showMsg('');
-        },
-        undefined,
-        (err)=>{
-          console.error('Erro ao carregar GLTF:', err);
-          showMsg('Não consegui carregar o 3D agora.');
-          // Mantém o fallback
+        const loader = new GLTFLoader();
+        const draco = new DRACOLoader();
+        draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+        loader.setDRACOLoader(draco);
+
+        if (CONFIG.basePath) loader.setPath(CONFIG.basePath);
+        if (CONFIG.resourcePath) loader.setResourcePath(CONFIG.resourcePath);
+        if (CONFIG.crossOrigin) loader.crossOrigin = CONFIG.crossOrigin;
+
+        loader.load(
+          CONFIG.modelUrl,
+          (gltf)=>{
+            const model = gltf.scene;
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3()).length();
+            const scale = (CONFIG.initialScale * 1) / (size || 1);
+            model.scale.setScalar(scale);
+
+            model.traverse((o)=>{
+              if (o.isMesh){
+                o.castShadow = false;
+                o.receiveShadow = false;
+                if (o.material) o.material.envMapIntensity = 1.0;
+              }
+            });
+            model.rotation.set(0, Math.PI*0.1, 0);
+            group.add(model);
+
+            if (fallbackImg) fallbackImg.classList.add('hidden');
+            showMsg('');
+          },
+          undefined,
+          (err)=>{
+            console.error('Erro ao carregar GLTF:', err);
+            showMsg('Não consegui carregar o 3D agora.');
+          }
+        );
+
+        function resize(){
+          const w = wrap.clientWidth || window.innerWidth;
+          const h = wrap.clientHeight || window.innerHeight;
+          renderer.setSize(w, h, false);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
         }
-      );
-    }
-    loadModel();
+        resize();
+        window.addEventListener('resize', resize);
 
-    function resize(){
-      const w = wrap.clientWidth, h = wrap.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h; camera.updateProjectionMatrix();
-    }
-    resize();
-    addEventListener('resize', resize);
+        // Interação arrastar + inércia
+        const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
+        const onMove = (x,y)=>{
+          if (!isDown || !group) return;
+          const dx = x - lastX, dy = y - lastY;
+          lastX = x; lastY = y;
+          const k = 0.005;
+          vy = -dx * k; vx = -dy * k;
+          group.rotation.y += vy; group.rotation.x += vx;
+          group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
+        };
+        const onUp = ()=>{ isDown = false; };
 
-    // Interação arrastar + inércia
-    let isDown = false, lastX = 0, lastY = 0, vx = 0, vy = 0;
-    const onDown = (x,y)=>{ isDown = true; lastX = x; lastY = y; };
-    const onMove = (x,y)=>{
-      if(!isDown) return;
-      const dx = x - lastX, dy = y - lastY; lastX = x; lastY = y;
-      const k = 0.005;
-      vy = -dx * k; vx = -dy * k;
-      group.rotation.y += vy; group.rotation.x += vx;
-      group.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, group.rotation.x));
-    };
-    const onUp = ()=>{ isDown = false; };
-    renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX, e.clientY));
-    addEventListener('mousemove', e=> onMove(e.clientX, e.clientY));
-    addEventListener('mouseup', onUp);
-    renderer.domElement.addEventListener('touchstart', e=>{
-      const t=e.touches[0]; if(t) onDown(t.clientX, t.clientY);
-    }, {passive:true});
-    renderer.domElement.addEventListener('touchmove',  e=>{
-      const t=e.touches[0]; if(t) onMove(t.clientX, t.clientY);
-    }, {passive:true});
-    renderer.domElement.addEventListener('touchend', onUp);
+        renderer.domElement.addEventListener('mousedown', e=> onDown(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e=> onMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', onUp);
 
-    const clock = new THREE.Clock();
-    function tick(){
-      const dt = Math.min(clock.getDelta(), 0.032);
-      if(!isDown){
-        group.rotation.y += vy; group.rotation.x += vx;
-        vy *= 0.94; vx *= 0.94;
-        if(CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){ group.rotation.y += 0.003; }
+        renderer.domElement.addEventListener('touchstart', e=>{
+          const t = e.touches[0]; if (t) onDown(t.clientX, t.clientY);
+        }, {passive:true});
+        renderer.domElement.addEventListener('touchmove', e=>{
+          const t = e.touches[0]; if (t) onMove(t.clientX, t.clientY);
+        }, {passive:true});
+        renderer.domElement.addEventListener('touchend', onUp);
+
+        clock = new THREE.Clock();
+
+        function tick(){
+          const dt = Math.min(clock.getDelta(), 0.032);
+          if (!isDown && group){
+            group.rotation.y += vy;
+            group.rotation.x += vx;
+            vy *= 0.94;
+            vx *= 0.94;
+            if (CONFIG.rotateOnIdle && Math.abs(vx)+Math.abs(vy) < 0.0006){
+              group.rotation.y += 0.003;
+            }
+          }
+          renderer.render(scene, camera);
+        }
+
+        renderer.setAnimationLoop(tick);
+
+        document.addEventListener('visibilitychange', ()=>{
+          if (!renderer) return;
+          if (document.hidden) renderer.setAnimationLoop(null);
+          else renderer.setAnimationLoop(tick);
+        });
+
+        if (location.protocol === 'file:') {
+          showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server).');
+        }
+      } catch (err){
+        console.error(err);
+        showMsg('Erro ao iniciar o 3D.');
       }
-      renderer.render(scene, camera);
     }
-    renderer.setAnimationLoop(tick);
 
-    document.addEventListener('visibilitychange', ()=>{
-      if (document.hidden) renderer.setAnimationLoop(null);
-      else renderer.setAnimationLoop(tick);
-    });
-
-    if (location.protocol === 'file:') {
-      showMsg('Dica: rode com um servidor local (ex.: VS Code Live Server).');
+    // Agenda o carregamento do 3D quando a página estiver estável
+    function scheduleInit3D(){
+      if ('requestIdleCallback' in window){
+        requestIdleCallback(()=> init3D(), { timeout: 2000 });
+      } else {
+        setTimeout(()=> init3D(), 1200);
+      }
     }
+
+    // Inicia após load (sem travar o primeiro paint)
+    window.addEventListener('load', scheduleInit3D);
+
+    // Se o usuário interagir antes, prioriza o 3D
+    wrap.addEventListener('pointerdown', ()=> init3D(), { once:true });
+
   </script>
 </body>
 </html>
